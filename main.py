@@ -194,6 +194,7 @@ class DirectPIITransform(beam.DoFn):
         # element expected to be a dict with "conversation_transcript": [...]
         conversation = element.get("conversation_transcript", [])
         redacted_conversation = []
+        debug_rows = []
         for turn in conversation:
             if isinstance(turn, dict) and 'content' in turn:
                 content = turn.get('content', '')
@@ -205,21 +206,19 @@ class DirectPIITransform(beam.DoFn):
                 # Filter entities by score > 0.7
                 filtered_results = [r for r in analyzer_result if r.score > 0.7]
                 # Collect debug info for matched entities
-                debug_info = []
                 for result in filtered_results:
                     matched_text = converted_content[result.start:result.end]
-                    debug_info.append(f"Matched entity: {result.entity_type}, text: {matched_text}, score: {result.score}")
+                    debug_rows.append(f"Matched entity: {result.entity_type}, text: {matched_text}, score: {result.score}")
 
                 anonymizer_result = self.anonymizer.anonymize(
                     text=converted_content,
                     analyzer_results=filtered_results,
                     operators=self.operators,
                 )
-                # Create redacted turn with debug field
+                # Create redacted turn without debug field
                 redacted_turn = {
                     'role': role,
-                    'content': anonymizer_result.text,
-                    'debug': debug_info
+                    'content': anonymizer_result.text
                 }
                 redacted_conversation.append(redacted_turn)
             else:
@@ -230,6 +229,8 @@ class DirectPIITransform(beam.DoFn):
         element["conversation_transcript"] = redacted_conversation
         # Also create a flattened redacted transcript for compatibility
         element["redacted_transcript"] = deconstruct_transcript(redacted_conversation)
+        # Add row-level debug string
+        element["debug"] = "; ".join(debug_rows)
         yield element
 
 
@@ -292,12 +293,8 @@ def run(argv=None):
                     source_col = config['tables']['source']['columns'][col_key]
                     output_row[col_name] = row[source_col]
             output_row['load_datetime'] = datetime.datetime.now().isoformat()
-            # Aggregate debug info from all turns
-            debug_rows = []
-            for turn in row.get("conversation_transcript", []):
-                if isinstance(turn, dict) and "debug" in turn:
-                    debug_rows.extend(turn["debug"])
-            output_row['debug'] = "; ".join(debug_rows)
+            # Use row-level debug info
+            output_row['debug'] = row.get('debug', '')
             #print("Test Output Row:", output_row)
             return output_row
 
