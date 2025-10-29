@@ -199,50 +199,11 @@ class DirectPIITransform(beam.DoFn):
 
 def run(argv=None):
 
-    # Argument parsing for input source
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--input', choices=['Bigquery', 'Local'], default='Bigquery', help='Input source: Bigquery or Local')
-    parser.add_argument('--local_file', default='local_test/sample_transcript_data.xlsx', help='Local Excel file path')
-    parser.add_argument('--output_file', default='local_test/output_redacted_data.xlsx', help='Output Excel file path for local mode')
-    known_args, pipeline_args = parser.parse_known_args(argv)
-
+    # Only support BigQuery mode
     config = load_config()
-    options = PipelineOptions(pipeline_args)
+    options = PipelineOptions(argv)
 
-    if known_args.input == 'Local':
-        # Local file mode
-        print(f"🔄 Running in LOCAL FILE mode")
-        print(f"📥 Input: {known_args.local_file}")
-        print(f"📤 Output: {known_args.output_file}")
-        df = pd.read_excel(known_args.local_file)
-        results = []
-        pii_transform = DirectPIITransform(config)
-        pii_transform.setup()
-        for idx, row in df.iterrows():
-            conversation_json = json.loads(row['transcript'])
-            element = {
-                'transaction_id': row['transaction_id'],
-                'transcript': row['transcript'],
-                'conversation_transcript': conversation_json.get('turns', [])
-            }
-            redacted_elements = list(pii_transform.process(element))
-            redacted_element = redacted_elements[0] if redacted_elements else element
-            # Prepare output
-            redacted_conversation = {'turns': redacted_element['conversation_transcript']}
-            results.append({
-                'transaction_id': redacted_element['transaction_id'],
-                'transcription_file_dt': row.get('file_date'),
-                'original_transcript': row['transcript'],
-                'redacted_transcript': json.dumps(redacted_conversation)
-            })
-        output_df = pd.DataFrame(results)
-        output_df.to_excel(known_args.output_file, index=False)
-        print(f"✅ Local file processing complete! Output saved to {known_args.output_file}")
-        return
-
-    # BigQuery mode (default)
     print(f"🔄 Running in BIGQUERY mode")
-    # Set default values for cloud execution if not running locally
     if not options.get_all_options().get('runner') or options.get_all_options().get('runner') == 'DataflowRunner':
         options.view_as(StandardOptions).runner = 'DataflowRunner'
         google_cloud_options = options.view_as(GoogleCloudOptions)
@@ -263,7 +224,6 @@ def run(argv=None):
         dataset_ref = bigquery.DatasetReference()
         dataset_ref.projectId = config['project']['id']
         dataset_ref.datasetId = config['dataset']['temp']
-        current_timestamp = datetime.datetime.now().isoformat()
         input_query = f"""
         SELECT {', '.join(select_fields)}
         FROM {input_table}
@@ -295,7 +255,6 @@ def run(argv=None):
                 elif col_key == 'transaction_id':
                     source_col = config['tables']['source']['columns'][col_key]
                     output_row[col_name] = row[source_col]
-            # Add load_datetime with current datetime
             output_row['load_datetime'] = datetime.datetime.now().isoformat()
             return output_row
 
@@ -306,20 +265,26 @@ def run(argv=None):
             temp_dataset=dataset_ref,
         )
 
-        (
+        result = (
             bigquery_data
             | "Parse Conversation" >> beam.Map(process_row)
             | "Direct PII Redaction" >> beam.ParDo(DirectPIITransform(config))
             | "Prepare Output" >> beam.Map(prepare_output_row)
-            | "Write to BigQuery"
-            >> beam.io.WriteToBigQuery(
-                output_table,
-                schema=config['tables']['target']['schema'],
-                write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
-                create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
-                method=config['dataflow'].get('write_method', None),
-                batch_size=config['processing'].get('batch_size', None),
-            )
+        )
+
+        # Count records processed
+        record_count = result | "Count Records" >> beam.combiners.Count.Globally()
+        def print_count(count):
+            print(f"✅ {count} records inserted into BigQuery.")
+        record_count | "Print Count" >> beam.Map(print_count)
+
+        result | "Write to BigQuery" >> beam.io.WriteToBigQuery(
+            output_table,
+            schema=config['tables']['target']['schema'],
+            write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
+            create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+            method=config['dataflow'].get('write_method', None),
+            batch_size=config['processing'].get('batch_size', None),
         )
 
 if __name__ == "__main__":

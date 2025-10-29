@@ -2,18 +2,18 @@
 
 ## Usage Examples
 
-### Run with BigQuery
+### Run with BigQuery (only mode supported)
 ```bash
 python main.py --runner=DirectRunner --input=Bigquery
 ```
 
-### Run with Local Excel File
-```bash
-python main.py --runner=DirectRunner --input=Local --local_file=local_test/sample_transcript_data.xlsx --output_file=local_test/output_redacted_data.xlsx
+Note: You may see a warning like:
 ```
+WARNING:apache_beam.options.pipeline_options:Discarding unparseable args: ['--input=Bigquery']
+```
+This is expected, as only Apache Beam pipeline options are parsed. The pipeline will run in BigQuery mode regardless of this warning.
 
-- For BigQuery, the pipeline reads from the configured table in `config.json`.
-- For Local, the pipeline reads from the specified Excel file and writes output to the specified Excel file.
+The pipeline reads from the configured BigQuery table in `config.json`.
 
 ## Overview
 This folder contains the PII redaction pipeline configured for local development and testing. It's essentially the same as the main production pipeline but with updated table names and the ability to run locally using DirectRunner.
@@ -48,11 +48,7 @@ python -m spacy download en_core_web_lg
 
 ### 2. Run Local Pipeline
 ```bash
-# Run with DirectRunner (local execution)
-python main.py --runner=DirectRunner
-
-# Or run with cloud execution (default)
-python main.py
+python main.py --runner=DirectRunner --input=Bigquery
 ```
 
 ## What's Different from Production
