@@ -9,6 +9,8 @@ import pandas as pd
 import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions, TypeOptions, GoogleCloudOptions, WorkerOptions
 from apache_beam.io.gcp.internal.clients import bigquery
+import re
+from text2digits import text2digits
 
 def load_config():
     """Load configuration from config.json"""
@@ -54,11 +56,14 @@ class DirectPIITransform(beam.DoFn):
         from presidio_anonymizer.entities import OperatorConfig
         from presidio_analyzer import PatternRecognizer, Pattern
         # Add custom address recognizer
+        # More generic UK address pattern: number, street, optional region/postcode
+        
         address_pattern = Pattern(
             "address_pattern",
-            r"\b\d{1,5}\s+([A-Za-z]+\s){1,4}(road|street|avenue|drive|lane|rd|st|ave|blvd)\b.*",
-            0.6,
+            r"\b(?:flat\s*(?:number|no)?\s*\d{1,5}|\d{1,5})\s+(?:[A-Za-z0-9]+\s+)?(?:street|road|lane|avenue|drive|close|way|place|square|court|crescent|terrace|boulevard|highway|hill|gardens|walk|view|grove|park)(?:\s+(?:[A-Z]{1,2}\s*\d{1,2}\s*[A-Z]{1,2}))?\b",
+            0.8,
         )
+
         class SpokenAddressRecognizer(PatternRecognizer):
             def __init__(self):
                 super().__init__(
@@ -67,6 +72,38 @@ class DirectPIITransform(beam.DoFn):
                     name="SpokenAddressRecognizer",
                     patterns=[address_pattern],
                 )
+        
+        
+        verification_code_pattern = Pattern(
+            name="verification_code_pattern",
+            regex=r"\b(?:verification\s*code\s*(is|:)?\s*)?\d{4,6}\b",
+            score=0.85
+        )
+
+        class VerificationCodeRecognizer(PatternRecognizer):
+            def __init__(self):
+                super().__init__(
+                    supported_entity="VERIFICATION_CODE",
+                    supported_language="en",
+                    name="VerificationCodeRecognizer",
+                    patterns=[verification_code_pattern]
+                )
+        
+        bank_digits_pattern = Pattern(
+            name="bank_last_digits_pattern",
+            regex=r"\b(?:last\s*(two|2)\s*digits\s*(of\s*(your)?\s*(bank\s*account)?)?\s*)?\d{2}\b",
+            score=0.85
+        )
+
+        class BankLastDigitsRecognizer(PatternRecognizer):
+            def __init__(self):
+                super().__init__(
+                    supported_entity="BANK_ACCOUNT_LAST_DIGITS",
+                    supported_language="en",
+                    name="BankLastDigitsRecognizer",
+                    patterns=[bank_digits_pattern]
+                )
+
 
         # Build operators from config
         for entity_type, replacement in self.config.get('pii_entities', {}).items():
@@ -79,85 +116,75 @@ class DirectPIITransform(beam.DoFn):
         config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "redactConfig.yaml")
         provider = NlpEngineProvider(conf_file=config_path)
 
-        # Create custom account number recognizer for spoken/written numbers
-        account_number_recognizer = PatternRecognizer(
-            supported_entity="ACCOUNT_NUMBER",
-            supported_language="en",
-            patterns=[
-                # Pattern for spoken digits like "ONE ZERO ZERO SIX NINE THREE SIX"
-                Pattern(
-                    name="spoken_account_number",
-                    regex=r"\b(?:ZERO|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE)(?:\s+(?:ZERO|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE)){3,}\b",
-                    score=0.7
-                ),
-                # Pattern for numeric account numbers like "1006936"
-                Pattern(
-                    name="numeric_account_number",
-                    regex=r"\b\d{4,12}\b",
-                    score=0.5
-                )
-            ],
-            context=["ACCOUNT", "CUSTOMER", "NUMBER", "ID", "REFERENCE"]
-        )
-
         # Create analyzer and anonymizer
-        # Create a registry that only loads English recognizers
         self.analyzer = AnalyzerEngine(nlp_engine=provider.create_engine())
         self.anonymizer = AnonymizerEngine()
 
-        # Register the custom recognizers on the analyzer registry
+        # Register the custom address recognizer on the analyzer registry
         try:
-            self.analyzer.registry.add_recognizer(account_number_recognizer)
             self.analyzer.registry.add_recognizer(SpokenAddressRecognizer())
-        except Exception:
-            try:
-                self.analyzer._registry.add_recognizer(account_number_recognizer)
-                self.analyzer._registry.add_recognizer(SpokenAddressRecognizer())
-            except Exception as e:
+            self.analyzer.registry.add_recognizer(VerificationCodeRecognizer())
+            self.analyzer.registry.add_recognizer(BankLastDigitsRecognizer())
+        except Exception as e:
                 logging.warning("Could not register custom recognizer: %s", e)
 
     def spoken_to_numeric(self, text: str) -> str:
         """
-        Convert spoken numbers (e.g., 'FIFTY TWO') to numeric digits ('50 2' simplified),
-        and also merge single-letter sequences like 'C F' -> 'CF'.
-        This is a heuristic approach — adapt to your needs.
+        Convert spoken cardinal numbers to digits, but avoid converting ordinal words
+        and spoken numbers when used with units like 'pounds', 'minutes', etc.
+        Also merge single-letter sequences like 'C F' -> 'CF'.
         """
+        from text2digits import text2digits
         import re
 
-        number_words = {
-            'ZERO': '0', 'ONE': '1', 'TWO': '2', 'THREE': '3', 'FOUR': '4', 'FIVE': '5',
-            'SIX': '6', 'SEVEN': '7', 'EIGHT': '8', 'NINE': '9', 'TEN': '10',
-            'ELEVEN': '11', 'TWELVE': '12', 'THIRTEEN': '13', 'FOURTEEN': '14', 'FIFTEEN': '15',
-            'SIXTEEN': '16', 'SEVENTEEN': '17', 'EIGHTEEN': '18', 'NINETEEN': '19', 'TWENTY': '20',
-            'THIRTY': '30', 'FORTY': '40', 'FIFTY': '50', 'SIXTY': '60', 'SEVENTY': '70',
-            'EIGHTY': '80', 'NINETY': '90', 'HUNDRED': '100', 'THOUSAND': '1000'
-        }
+        # List of ordinal words to exclude from conversion
+        ordinals = [
+            "first", "second", "third", "fourth", "fifth", "sixth", "seventh",
+            "eighth", "ninth", "tenth", "eleventh", "twelfth", "thirteenth",
+            "fourteenth", "fifteenth", "sixteenth", "seventeenth", "eighteenth",
+            "nineteenth", "twentieth"
+        ]
 
-        # Convert to upper for matching but keep original letter-case variants handled by returning lower at the end
-        original_text = text
-        text_up = text.upper()
+        # List of units where spoken numbers should be preserved
+        preserve_units = ["pounds", "minutes", "days", "hours", "weeks", "months"]
 
-        # Replace sequences of spelled numbers with joined digits/values
-        # This approach: for contiguous number words, replace with the concatenated numeric tokens separated by space
-        def replace_spoken(match):
-            words = match.group(0).split()
-            digits = []
-            for word in words:
-                if word in number_words:
-                    digits.append(number_words[word])
-                else:
-                    digits.append(word)
-            return " ".join(digits)
+        # Mask ordinal words
+        for word in ordinals:
+            pattern = rf"\b{word}\b"
+            token = f"__{word.upper()}__"
+            text = re.sub(pattern, token, text, flags=re.IGNORECASE)
 
-        num_pattern = re.compile(
-            r'\b(?:ZERO|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|ELEVEN|TWELVE|THIRTEEN|FOURTEEN|FIFTEEN|SIXTEEN|SEVENTEEN|EIGHTEEN|NINETEEN|TWENTY|THIRTY|FORTY|FIFTY|SIXTY|SEVENTY|EIGHTY|NINETY|HUNDRED|THOUSAND)(?:\s+(?:ZERO|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|TEN|ELEVEN|TWELVE|THIRTEEN|FOURTEEN|FIFTEEN|SIXTEEN|SEVENTEEN|EIGHTEEN|NINETEEN|TWENTY|THIRTY|FORTY|FIFTY|SIXTY|SEVENTY|EIGHTY|NINETY|HUNDRED|THOUSAND))*\b',
-            re.IGNORECASE
-        )
+        # Mask spoken numbers followed by units
+        for unit in preserve_units:
+            pattern = rf"\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty)\s+{unit}\b"
+            text = re.sub(
+                pattern,
+                lambda m: f"__{m.group(0).upper().replace(' ', '_')}__",
+                text,
+                flags=re.IGNORECASE
+            )
 
-        converted = num_pattern.sub(lambda m: replace_spoken(m), text_up)
+        # Convert remaining spoken numbers
+        t2d = text2digits.Text2Digits()
+        converted = t2d.convert(text)
 
-        # Merge groups of spaced single letters (like "H A W" -> "HAW")
-        # We only merge groups of 2+ letters to avoid merging single isolated letters
+        # Restore masked ordinal words
+        for word in ordinals:
+            token = f"__{word.upper()}__"
+            converted = re.sub(token, word, converted, flags=re.IGNORECASE)
+
+        # Restore masked unit phrases
+        for unit in preserve_units:
+            for num in [
+                "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+                "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen",
+                "eighteen", "nineteen", "twenty"
+            ]:
+                phrase = f"{num} {unit}"
+                token = f"__{phrase.upper().replace(' ', '_')}__"
+                converted = re.sub(token, phrase, converted, flags=re.IGNORECASE)
+
+        # Merge groups of spaced single letters (like "W A" -> "WA")
         converted = re.sub(r'\b(?:[A-Z]\s+){1,}[A-Z]\b', lambda m: m.group(0).replace(" ", ""), converted)
 
         return converted
@@ -175,15 +202,24 @@ class DirectPIITransform(beam.DoFn):
                 converted_content = self.spoken_to_numeric(content)
                 # Analyze and redact PII in this turn's content
                 analyzer_result = self.analyzer.analyze(text=converted_content, language="en")
+                # Filter entities by score > 0.7
+                filtered_results = [r for r in analyzer_result if r.score > 0.7]
+                # Collect debug info for matched entities
+                debug_info = []
+                for result in filtered_results:
+                    matched_text = converted_content[result.start:result.end]
+                    debug_info.append(f"Matched entity: {result.entity_type}, text: {matched_text}, score: {result.score}")
+
                 anonymizer_result = self.anonymizer.anonymize(
                     text=converted_content,
-                    analyzer_results=analyzer_result,
+                    analyzer_results=filtered_results,
                     operators=self.operators,
                 )
-                # Create redacted turn
+                # Create redacted turn with debug field
                 redacted_turn = {
                     'role': role,
-                    'content': anonymizer_result.text
+                    'content': anonymizer_result.text,
+                    'debug': debug_info
                 }
                 redacted_conversation.append(redacted_turn)
             else:
@@ -244,7 +280,7 @@ def run(argv=None):
             return row
 
         def prepare_output_row(row):
-            row[config['tables']['target']['columns']['conversation_transcript_json']] = json.dumps(row["conversation_transcript"])
+            row[config['tables']['target']['columns']['conversation_transcript_json']] = json.dumps(row["conversation_transcript"], separators=(",", ":"))
             output_row = {}
             for col_key, col_name in config['tables']['target']['columns'].items():
                 if col_name in row:
@@ -256,6 +292,13 @@ def run(argv=None):
                     source_col = config['tables']['source']['columns'][col_key]
                     output_row[col_name] = row[source_col]
             output_row['load_datetime'] = datetime.datetime.now().isoformat()
+            # Aggregate debug info from all turns
+            debug_rows = []
+            for turn in row.get("conversation_transcript", []):
+                if isinstance(turn, dict) and "debug" in turn:
+                    debug_rows.extend(turn["debug"])
+            output_row['debug'] = "; ".join(debug_rows)
+            #print("Test Output Row:", output_row)
             return output_row
 
         bigquery_data = p | "Read from BigQuery Table" >> beam.io.ReadFromBigQuery(

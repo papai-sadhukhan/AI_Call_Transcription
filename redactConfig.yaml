@@ -11,8 +11,7 @@ ner_model_configuration:
     PER: PERSON
     PERSON: PERSON
     HCW: PERSON
-    RELATIONSHIP_NAME: PERSON
-
+    
     # ---- Contact / Communication ----
     EMAIL: EMAIL
     PHONE: PHONE_NUMBER
@@ -26,15 +25,6 @@ ner_model_configuration:
     STREET_NAME: ADDRESS
     HOUSE_NUMBER: HOUSE_NUMBER
     POSTCODE: POSTAL_CODE
-
-    # ---- Dates / Times ----
-    DATE: DATE_TIME
-    TIME: DATE_TIME
-
-    # ---- Organization / Financial ----
-    ORG: ORGANIZATION
-    MONEY: MONEY
-    FINANCIAL_AMOUNT: MONEY
 
     # ---- Credentials / Codes ----
     PASSWORD: PASSWORD
