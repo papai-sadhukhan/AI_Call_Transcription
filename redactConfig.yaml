@@ -1,0 +1,63 @@
+nlp_engine_name: spacy
+models:
+  -
+    lang_code: en
+    model_name: en_core_web_lg
+    # model_name: en_core_web_trf  # Optional transformer version
+
+ner_model_configuration:
+  model_to_presidio_entity_mapping:
+    # ---- Core Person Entities ----
+    PER: PERSON
+    PERSON: PERSON
+    HCW: PERSON
+    RELATIONSHIP_NAME: PERSON
+
+    # ---- Contact / Communication ----
+    EMAIL: EMAIL
+    PHONE: PHONE_NUMBER
+
+    # ---- Address / Location ----
+    FAC: LOCATION
+    GPE: LOCATION
+    LOC: LOCATION
+    ADDRESS: ADDRESS
+    STREET_ADDRESS: ADDRESS
+    STREET_NAME: ADDRESS
+    HOUSE_NUMBER: HOUSE_NUMBER
+    POSTCODE: POSTAL_CODE
+
+    # ---- Dates / Times ----
+    DATE: DATE_TIME
+    TIME: DATE_TIME
+
+    # ---- Organization / Financial ----
+    ORG: ORGANIZATION
+    MONEY: MONEY
+    FINANCIAL_AMOUNT: MONEY
+
+    # ---- Credentials / Codes ----
+    PASSWORD: PASSWORD
+    VERIFICATION_CODE: VERIFICATION_CODE
+
+    # ---- Other Entities ----
+    AGE: AGE
+
+  low_confidence_score_multiplier: 0.4
+
+  low_score_entity_names:
+    -  # Empty list for now (future low-confidence entities can go here)
+
+  labels_to_ignore:
+    # Ignored to reduce false positives or low-value extractions
+    - CARDINAL
+    - EVENT
+    - LANGUAGE
+    - LAW
+    - ORDINAL
+    - PERCENT
+    - PRODUCT
+    - QUANTITY
+    - WORK_OF_ART
+    - NUMBERS
+    - NUMBER

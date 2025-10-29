@@ -1,0 +1,18 @@
+# Requirements for local development and testing
+apache-beam==2.66.0
+presidio_analyzer==2.2.359
+presidio_anonymizer==2.2.359
+spacy==3.8.7
+
+# Additional dependencies for local development
+google-cloud-bigquery==3.11.4
+google-auth==2.23.0
+
+# Local file processing
+pandas>=1.5.0
+openpyxl>=3.0.0
+
+# Development tools (optional)
+pytest==7.4.0
+black==23.7.0
+flake8==6.0.0
