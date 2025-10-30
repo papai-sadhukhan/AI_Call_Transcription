@@ -2,15 +2,13 @@
   "project": {
     "id": "skyuk-uk-reg-expmnt-prod",
     "region": "europe-west1",
-    "temp_location": "gs://dataflow-staging-europe-west1-391024612380/tmp",
     "staging_location": "gs://dataflow-staging-europe-west1-391024612380/staging",
     "subnetwork": "https://www.googleapis.com/compute/v1/projects/skyuk-uk-shr-vpc-sc-ingt-dev/regions/europe-west1/subnetworks/sn-ds-ew1-ingt-dev-01-private",
     "job_name": "bq-read-qma-poc"
   },
   "dataset": {
     "input": "cdn10",
-    "output": "cdn10",
-    "temp": "cdn10"
+    "output": "cdn10"
   },
   "tables": {
     "source": {
@@ -23,7 +21,7 @@
     },
     "target": {
       "name": "td_call_redacted_p2",
-      "schema": "transaction_id:STRING, file_date:DATE, transcript:STRING, load_datetime:TIMESTAMP ,debug:STRING",
+      "schema": "transaction_id:STRING, file_date:DATE, transcript:STRING, load_datetime:TIMESTAMP ,debug:STRING, transcript_original:STRING",
       "columns": {
         "transaction_id": "transaction_id",
         "transcription_file_dt": "file_date", 
