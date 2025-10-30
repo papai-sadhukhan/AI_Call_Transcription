@@ -72,9 +72,12 @@ class DirectPIITransform(beam.DoFn):
 
         # Register custom recognizers from utils.customer_registry
         try:
+            from utils.customer_registry import SpokenPostcodeRecognizer, SpelledOutNameRecognizer
             self.analyzer.registry.add_recognizer(SpokenAddressRecognizer())
             self.analyzer.registry.add_recognizer(VerificationCodeRecognizer())
             self.analyzer.registry.add_recognizer(BankLastDigitsRecognizer())
+            self.analyzer.registry.add_recognizer(SpokenPostcodeRecognizer())
+            self.analyzer.registry.add_recognizer(SpelledOutNameRecognizer())
         except Exception as e:
             logging.warning("Could not register custom recognizer: %s", e)
 

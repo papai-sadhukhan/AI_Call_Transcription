@@ -30,7 +30,7 @@
     }
   },
   "processing": {
-    "limit": 1000,
+    "limit": 100,
     "batch_size": 3000,
     "selected_fields": ["transaction_id", "file_date", "transcript"],
     "condition" : "1=1"
