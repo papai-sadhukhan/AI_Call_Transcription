@@ -149,7 +149,6 @@ def run(argv=None):
 
 
     print(f"🔄 Running in BIGQUERY mode with config: {args.config_path}")
-    logging.info(f"🔄 Running in BIGQUERY mode with config: {args.config_path}")
     # Set Dataflow job project
     if not options.get_all_options().get('runner') or options.get_all_options().get('runner') == 'DataflowRunner':
         options.view_as(StandardOptions).runner = 'DataflowRunner'
@@ -177,11 +176,8 @@ def run(argv=None):
         """
         print("Input Query for BigQuery:")
         print(input_query)
-        logging.info("Input Query for BigQuery:")
-        logging.info(input_query)
 
         def process_row(row):
-            # logging.debug(f"Processing row: {row}")
             # Get the source column name for transcript (always string)
             transcript_src_col = config['tables']['source']['columns'].get('input_transcript')
             conversation_json = row.get(transcript_src_col)
@@ -194,18 +190,15 @@ def run(argv=None):
             return row
 
         def prepare_output_row(row):
-            # logging.debug(f"Preparing output row: {row}")
-            # Write redacted transcript to the configured column for transcription_redacted
-            for col_key, col_name in config['tables']['target']['columns'].items():
-                if col_key == 'transcription_redacted':
-                    row[col_name] = json.dumps(row["conversation_transcript"], separators=(",", ":"))
+            # Write redacted transcript to transcription_redacted column
+            row[config['tables']['target']['columns'].get('transcription_redacted')] = json.dumps(row["conversation_transcript"], separators=(",", ":"))
             output_row = {}
-            for col_key, col_name in config['tables']['target']['columns'].items():
-                # If column is load_dt, set to current time
-                if col_key == 'load_dt':
-                    output_row[col_name] = datetime.datetime.now().isoformat()
-                else:
-                    output_row[col_name] = row.get(col_name)
+            # Only output the required BQ target columns
+            output_row['file_date'] = row.get('file_date')
+            output_row['transaction_id'] = row.get('transaction_id')
+            output_row['transcription_redacted'] = row.get('transcription_redacted')
+            output_row['redacted_entity'] = row.get('redacted_entity', '')
+            output_row['load_dt'] = datetime.datetime.now().isoformat()
             return output_row
 
         bigquery_data = p | "Read from BigQuery Table" >> beam.io.ReadFromBigQuery(
@@ -227,14 +220,11 @@ def run(argv=None):
         record_count = result | "Count Records" >> beam.combiners.Count.Globally()
         def print_count(count):
             print(f"✅ {count} records inserted into BigQuery.")
-            logging.info(f"✅ {count} records inserted into BigQuery.")
         record_count | "Print Count" >> beam.Map(print_count)
 
         write_method = config['dataflow'].get('write_method', 'STREAMING_INSERTS')
 
-    print("Writing results to BigQuery...")
-    logging.info("Writing results to BigQuery...")
-    result | "Write to BigQuery" >> beam.io.WriteToBigQuery(
+        result | "Write to BigQuery" >> beam.io.WriteToBigQuery(
             output_table,
             write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
             create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
