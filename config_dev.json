@@ -1,31 +1,35 @@
 {
   "project": {
-    "id": "skyuk-uk-reg-expmnt-prod",
+    "bigquery_project_id": "skyuk-uk-reg-expmnt-dev",
+    "dataflow_project_id": "skyuk-uk-reg-expmnt-dev",
     "region": "europe-west1",
-    "staging_location": "gs://dataflow-staging-europe-west1-391024612380/staging",
-    "subnetwork": "https://www.googleapis.com/compute/v1/projects/skyuk-uk-shr-vpc-sc-ingt-dev/regions/europe-west1/subnetworks/sn-ds-ew1-ingt-dev-01-private",
-    "job_name": "bq-read-qma-poc"
+    "staging_location": "gs://dataflow-staging-europe-west1-181982885154/staging",
+    "temp_bigquery_dataset" : "dataflow_temp_dataset",
+    "subnetwork": "https://www.googleapis.com/compute/v1/projects/skyuk-uk-reg-expmnt-dev/regions/europe-west1/subnetworks/expmnt-network",
+    "job_name": "call-transcript-redaction-job"
   },
   "dataset": {
-    "input": "cdn10",
-    "output": "cdn10"
+    "input": "uk_call_transcript_exprmnt",
+    "output": "uk_call_transcript_exprmnt"
   },
   "tables": {
     "source": {
-      "name": "td_call_redacted_p1",
+      "name": "td_call_redaction_p1",
       "columns": {
         "transaction_id": "transaction_id",
         "transcription_file_dt": "file_date", 
-        "conversation_transcript_json": "transcript"
+        "input_transcript": "transcript"
       }
     },
     "target": {
-      "name": "td_call_redacted_p2",
-      "schema": "transaction_id:STRING, file_date:DATE, transcript:STRING, load_datetime:TIMESTAMP ,debug:STRING, transcript_original:STRING",
-      "columns": {
+  "name": "td_call_redacted_p1",
+  "columns": {
         "transaction_id": "transaction_id",
         "transcription_file_dt": "file_date", 
-        "conversation_transcript_json": "transcript"
+        "output_transcript": "transcript",
+        "debug": "debug",
+        "transcript_original": "transcript_original",
+        "load_datetime": "load_datetime"
       }
     }
   },

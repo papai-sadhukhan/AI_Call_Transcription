@@ -2,18 +2,21 @@
 
 ## Usage Examples
 
-### Run with BigQuery (only mode supported)
+
+### Run with BigQuery (dev/prod config)
+You must now specify the config file using `--config_path`:
+
+**For development:**
 ```bash
-python main.py --runner=DirectRunner --input=Bigquery
+python main.py --config_path config_dev.json --runner DataflowRunner
 ```
 
-Note: You may see a warning like:
+**For production:**
+```bash
+python main.py --config_path config_prod.json --runner DataflowRunner
 ```
-WARNING:apache_beam.options.pipeline_options:Discarding unparseable args: ['--input=Bigquery']
-```
-This is expected, as only Apache Beam pipeline options are parsed. The pipeline will run in BigQuery mode regardless of this warning.
 
-The pipeline reads from the configured BigQuery table in `config.json`.
+The pipeline reads from the configured BigQuery table in the selected config file.
 
 ## Overview
 This folder contains the PII redaction pipeline configured for local development and testing. It's essentially the same as the main production pipeline but with updated table names and the ability to run locally using DirectRunner.
@@ -46,9 +49,10 @@ pip install -r requirements.txt
 python -m spacy download en_core_web_lg
 ```
 
+
 ### 2. Run Local Pipeline
 ```bash
-python main.py --runner=DirectRunner --input=Bigquery
+python main.py --config_path config_dev.json --runner DirectRunner
 ```
 
 ## What's Different from Production
@@ -133,19 +137,18 @@ The pipeline handles conversation transcripts with this structure:
 
 ## Usage Options
 
+
 ### Local Execution (DirectRunner)
 ```bash
-python main.py --runner=DirectRunner
+python main.py --config_path config_dev.json --runner DirectRunner
 ```
 - Runs on your local machine
 - Good for testing and development
 - Processes smaller datasets efficiently
 
-### Cloud Execution (DataflowRunner) 
+### Cloud Execution (DataflowRunner)
 ```bash
-python main.py --runner=DataflowRunner
-# or simply
-python main.py
+python main.py --config_path config_prod.json --runner DataflowRunner
 ```
 - Runs on Google Cloud Dataflow
 - Scalable for large datasets
@@ -153,14 +156,16 @@ python main.py
 
 ## Usage Examples
 
+
 ### Run with BigQuery
 ```bash
-python main.py --runner=DirectRunner --input=Bigquery
+python main.py --config_path config_dev.json --runner DirectRunner
 ```
+
 
 ### Run with Local Excel File
 ```bash
-python main.py --runner=DirectRunner --input=Local --local_file=local_test/sample_transcript_data.xlsx --output_file=local_test/output_redacted_data.xlsx
+python main.py --config_path config_dev.json --runner DirectRunner --input=Local --local_file=local_test/sample_transcript_data.xlsx --output_file=local_test/output_redacted_data.xlsx
 ```
 
 - For BigQuery, the pipeline reads from the configured table in `config.json`.
@@ -170,6 +175,7 @@ python main.py --runner=DirectRunner --input=Local --local_file=local_test/sampl
 
 ### Modifying Configuration
 Edit `config.json` to change:
+
 
 **Table Names:**
 ```json
@@ -212,7 +218,17 @@ You can pass any Apache Beam pipeline options:
 ```bash
 # Local execution with specific worker count
 python
+
 The pipeline uses the `redactConfig.yaml` file from the parent directory, so any changes to entity mappings or NLP settings will be reflected in local runs.
+
+## Selecting Environment
+
+You can now select the environment config file at runtime:
+
+- For development: `--config_path config_dev.json`
+- For production: `--config_path config_prod.json`
+
+This allows you to switch between dev and prod settings without changing code.
 
 ## Troubleshooting
 

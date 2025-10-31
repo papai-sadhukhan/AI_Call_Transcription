@@ -14,9 +14,9 @@ import re
 from utils.spoken_to_numeric import spoken_to_numeric
 from utils.customer_registry import SpokenAddressRecognizer, VerificationCodeRecognizer, BankLastDigitsRecognizer
 
-def load_config():
-    """Load configuration from config.json"""
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.json")
+
+def load_config(config_path):
+    """Load configuration from the given config path"""
     with open(config_path, 'r') as f:
         return json.load(f)
 
@@ -128,31 +128,46 @@ class DirectPIITransform(beam.DoFn):
         yield element
 
 
+
 def run(argv=None):
+    parser = argparse.ArgumentParser(description="Run the data pipeline with specified config.")
+    parser.add_argument('--config_path', type=str, required=True, help='Path to the config file (e.g., config_dev.json or config_prod.json)')
+    parser.add_argument('--runner', type=str, default='DataflowRunner', help='Pipeline runner (default: DataflowRunner)')
+    args, pipeline_args = parser.parse_known_args(argv)
 
-    # Only support BigQuery mode
-    config = load_config()
-    options = PipelineOptions(argv)
+    config = load_config(args.config_path)
 
-    print(f"🔄 Running in BIGQUERY mode")
+    # Add Dataflow experiments to pipeline_args before constructing PipelineOptions
+    if 'experiments' in config.get('dataflow', {}):
+        for exp in config['dataflow']['experiments']:
+            pipeline_args.append(f'--experiments={exp}')
+
+    # Ensure runner is set
+    pipeline_args.append(f'--runner={args.runner}')
+
+    options = PipelineOptions(pipeline_args)
+
+
+    print(f"🔄 Running in BIGQUERY mode with config: {args.config_path}")
+    # Set Dataflow job project
     if not options.get_all_options().get('runner') or options.get_all_options().get('runner') == 'DataflowRunner':
         options.view_as(StandardOptions).runner = 'DataflowRunner'
         google_cloud_options = options.view_as(GoogleCloudOptions)
-        google_cloud_options.project = config['project']['id']
+        google_cloud_options.project = config['project']['dataflow_project_id']
         google_cloud_options.region = config['project']['region']
         google_cloud_options.staging_location = config['project']['staging_location']
-        google_cloud_options.subnetwork = config['project']['subnetwork']
         google_cloud_options.job_name = config['project']['job_name']
-        dataflow_options = options.view_as(WorkerOptions)
-        dataflow_options.experiments = config['dataflow']['experiments']
 
     with beam.Pipeline(options=options) as p:
-        input_table = f"{config['project']['id']}.{config['dataset']['input']}.{config['tables']['source']['name']}"
-        output_table = f"{config['project']['id']}.{config['dataset']['output']}.{config['tables']['target']['name']}"
+        # Use BigQuery project for table references and queries
+        input_table = f"{config['project']['bigquery_project_id']}.{config['dataset']['input']}.{config['tables']['source']['name']}"
+        output_table = f"{config['project']['bigquery_project_id']}.{config['dataset']['output']}.{config['tables']['target']['name']}"
         select_fields = config['processing']['selected_fields']
         condition = config['processing']['condition']
+        bigquery_project = config['project']['bigquery_project_id']
         dataset_ref = bigquery.DatasetReference()
-        dataset_ref.projectId = config['project']['id']
+        dataset_ref.projectId = config['project']['bigquery_project_id']
+        dataset_ref.datasetId = config['project']['temp_bigquery_dataset']
         input_query = f"""
         SELECT {', '.join(select_fields)}
         FROM {input_table}
@@ -164,7 +179,7 @@ def run(argv=None):
 
         def process_row(row):
             # Get the source column name for transcript (always string)
-            transcript_src_col = config['tables']['source']['columns']['conversation_transcript_json']
+            transcript_src_col = config['tables']['source']['columns'].get('input_transcript')
             conversation_json = row.get(transcript_src_col)
             row["transcript_original"] = conversation_json
             try:
@@ -175,7 +190,8 @@ def run(argv=None):
             return row
 
         def prepare_output_row(row):
-            row[config['tables']['target']['columns']['conversation_transcript_json']] = json.dumps(row["conversation_transcript"], separators=(",", ":"))
+            # Write redacted transcript to output_transcript column
+            row[config['tables']['target']['columns'].get('output_transcript')] = json.dumps(row["conversation_transcript"], separators=(",", ":"))
             output_row = {}
             for col_key, col_name in config['tables']['target']['columns'].items():
                 if col_name in row:
@@ -197,7 +213,8 @@ def run(argv=None):
             query=input_query,
             method="DIRECT_READ",
             use_standard_sql=True,
-            project = config['project']['id'],
+            project=bigquery_project,
+            temp_dataset=dataset_ref,
         )
 
         result = (
@@ -217,7 +234,6 @@ def run(argv=None):
 
         result | "Write to BigQuery" >> beam.io.WriteToBigQuery(
             output_table,
-            schema=config['tables']['target']['schema'],
             write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
             create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
             method=write_method,
@@ -226,4 +242,5 @@ def run(argv=None):
 
 
 if __name__ == "__main__":
-    run()
+    import sys
+    run(sys.argv[1:])
