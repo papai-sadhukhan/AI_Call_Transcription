@@ -88,7 +88,7 @@ class DirectPIITransform(beam.DoFn):
         # element expected to be a dict with "conversation_transcript": [...]
         conversation = element.get("conversation_transcript", [])
         redacted_conversation = []
-        debug_rows = []
+        redacted_entity_rows = []
         for turn in conversation:
             if isinstance(turn, dict) and 'content' in turn:
                 content = turn.get('content', '')
@@ -99,10 +99,10 @@ class DirectPIITransform(beam.DoFn):
                 analyzer_result = self.analyzer.analyze(text=converted_content, language="en")
                 # Filter entities by score > 0.7
                 filtered_results = [r for r in analyzer_result if r.score > 0.7]
-                # Collect debug info for matched entities
+                # Collect redacted entity info for matched entities
                 for result in filtered_results:
                     matched_text = converted_content[result.start:result.end]
-                    debug_rows.append(f"Matched entity: {result.entity_type}, text: {matched_text}, score: {result.score}")
+                    redacted_entity_rows.append(f"Matched entity: {result.entity_type}, text: {matched_text}, score: {result.score}")
 
                 anonymizer_result = self.anonymizer.anonymize(
                     text=converted_content,
@@ -123,8 +123,8 @@ class DirectPIITransform(beam.DoFn):
         element["conversation_transcript"] = redacted_conversation
         # Also create a flattened redacted transcript for compatibility
         element["redacted_transcript"] = deconstruct_transcript(redacted_conversation)
-        # Add row-level debug string
-        element["debug"] = "; ".join(debug_rows)
+        # Add row-level redacted_entity string
+        element["redacted_entity"] = "; ".join(redacted_entity_rows)
         yield element
 
 
@@ -149,6 +149,7 @@ def run(argv=None):
 
 
     print(f"🔄 Running in BIGQUERY mode with config: {args.config_path}")
+    logging.info(f"🔄 Running in BIGQUERY mode with config: {args.config_path}")
     # Set Dataflow job project
     if not options.get_all_options().get('runner') or options.get_all_options().get('runner') == 'DataflowRunner':
         options.view_as(StandardOptions).runner = 'DataflowRunner'
@@ -176,8 +177,11 @@ def run(argv=None):
         """
         print("Input Query for BigQuery:")
         print(input_query)
+        logging.info("Input Query for BigQuery:")
+        logging.info(input_query)
 
         def process_row(row):
+            # logging.debug(f"Processing row: {row}")
             # Get the source column name for transcript (always string)
             transcript_src_col = config['tables']['source']['columns'].get('input_transcript')
             conversation_json = row.get(transcript_src_col)
@@ -190,23 +194,18 @@ def run(argv=None):
             return row
 
         def prepare_output_row(row):
-            # Write redacted transcript to output_transcript column
-            row[config['tables']['target']['columns'].get('output_transcript')] = json.dumps(row["conversation_transcript"], separators=(",", ":"))
+            # logging.debug(f"Preparing output row: {row}")
+            # Write redacted transcript to the configured column for transcription_redacted
+            for col_key, col_name in config['tables']['target']['columns'].items():
+                if col_key == 'transcription_redacted':
+                    row[col_name] = json.dumps(row["conversation_transcript"], separators=(",", ":"))
             output_row = {}
             for col_key, col_name in config['tables']['target']['columns'].items():
-                if col_name in row:
-                    output_row[col_name] = row[col_name]
-                elif col_key == 'transcription_file_dt':
-                    source_col = config['tables']['source']['columns'][col_key]
-                    output_row[col_name] = row.get(source_col)
-                elif col_key == 'transaction_id':
-                    source_col = config['tables']['source']['columns'][col_key]
-                    output_row[col_name] = row[source_col]
-            # Always include transcript_original from row, regardless of mapping
-            output_row['transcript_original'] = row.get('transcript_original')
-            output_row['load_datetime'] = datetime.datetime.now().isoformat()
-            # Use row-level debug info
-            output_row['debug'] = row.get('debug', '')
+                # If column is load_dt, set to current time
+                if col_key == 'load_dt':
+                    output_row[col_name] = datetime.datetime.now().isoformat()
+                else:
+                    output_row[col_name] = row.get(col_name)
             return output_row
 
         bigquery_data = p | "Read from BigQuery Table" >> beam.io.ReadFromBigQuery(
@@ -228,11 +227,14 @@ def run(argv=None):
         record_count = result | "Count Records" >> beam.combiners.Count.Globally()
         def print_count(count):
             print(f"✅ {count} records inserted into BigQuery.")
+            logging.info(f"✅ {count} records inserted into BigQuery.")
         record_count | "Print Count" >> beam.Map(print_count)
 
         write_method = config['dataflow'].get('write_method', 'STREAMING_INSERTS')
 
-        result | "Write to BigQuery" >> beam.io.WriteToBigQuery(
+    print("Writing results to BigQuery...")
+    logging.info("Writing results to BigQuery...")
+    result | "Write to BigQuery" >> beam.io.WriteToBigQuery(
             output_table,
             write_disposition=beam.io.BigQueryDisposition.WRITE_APPEND,
             create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
