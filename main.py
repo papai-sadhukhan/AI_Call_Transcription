@@ -12,7 +12,15 @@ from apache_beam.options.pipeline_options import PipelineOptions, StandardOption
 from apache_beam.io.gcp.internal.clients import bigquery
 import re
 from utils.spoken_to_numeric import spoken_to_numeric
-from utils.customer_registry import SpokenAddressRecognizer, VerificationCodeRecognizer, BankLastDigitsRecognizer
+from utils.customer_registry import (
+    SpokenAddressRecognizer, 
+    VerificationCodeRecognizer, 
+    BankLastDigitsRecognizer,
+    FalsePositiveFilterRecognizer,
+    AlphanumericPasswordRecognizer,
+    ContextBasedNameRecognizer,
+    FullAddressLineRecognizer
+)
 
 
 def load_config(config_path):
@@ -52,7 +60,6 @@ class DirectPIITransform(beam.DoFn):
 
     def setup(self):
         # local imports for Presidio
-
         from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
         from presidio_anonymizer import AnonymizerEngine
         from presidio_analyzer.nlp_engine import NlpEngineProvider
@@ -70,7 +77,7 @@ class DirectPIITransform(beam.DoFn):
         self.analyzer = AnalyzerEngine(nlp_engine=provider.create_engine())
         self.anonymizer = AnonymizerEngine()
 
-        # Register custom recognizers from utils.customer_registry
+        # Register all custom recognizers from utils.customer_registry
         try:
             from utils.customer_registry import SpokenPostcodeRecognizer, SpelledOutNameRecognizer
             self.analyzer.registry.add_recognizer(SpokenAddressRecognizer())
@@ -78,6 +85,10 @@ class DirectPIITransform(beam.DoFn):
             self.analyzer.registry.add_recognizer(BankLastDigitsRecognizer())
             self.analyzer.registry.add_recognizer(SpokenPostcodeRecognizer())
             self.analyzer.registry.add_recognizer(SpelledOutNameRecognizer())
+            self.analyzer.registry.add_recognizer(AlphanumericPasswordRecognizer())
+            # Note: FalsePositiveFilterRecognizer is not registered - it's a utility class, not a recognizer
+            self.analyzer.registry.add_recognizer(ContextBasedNameRecognizer())
+            self.analyzer.registry.add_recognizer(FullAddressLineRecognizer())
         except Exception as e:
             logging.warning("Could not register custom recognizer: %s", e)
 
@@ -85,31 +96,47 @@ class DirectPIITransform(beam.DoFn):
 
     def process(self, element):
         """Process each conversation turn directly for PII redaction"""
-        # element expected to be a dict with "conversation_transcript": [...]
         conversation = element.get("conversation_transcript", [])
         redacted_conversation = []
         redacted_entity_rows = []
+        
         for turn in conversation:
             if isinstance(turn, dict) and 'content' in turn:
                 content = turn.get('content', '')
                 role = turn.get('role', '')
+                
                 # Convert spelled numbers and merge spelled letters
                 converted_content = spoken_to_numeric(content)
-                # Analyze and redact PII in this turn's content
+                
+                # Analyze PII using Presidio with all registered custom recognizers
                 analyzer_result = self.analyzer.analyze(text=converted_content, language="en")
-                # Filter entities by score > 0.7
-                filtered_results = [r for r in analyzer_result if r.score > 0.7]
-                # Collect redacted entity info for matched entities
+                
+                # Filter entities by score > 0.7 and remove false positives
+                filtered_results = []
+                for r in analyzer_result:
+                    if r.score > 0.7:
+                        matched_text = converted_content[r.start:r.end]
+                        context_start = max(0, r.start - 100)
+                        context_end = min(len(converted_content), r.end + 100)
+                        context = converted_content[context_start:context_end]
+                        
+                        # Use FalsePositiveFilterRecognizer to check for false positives
+                        if not FalsePositiveFilterRecognizer.is_false_positive(matched_text, r.entity_type, context):
+                            filtered_results.append(r)
+                
+                # Log matched entities for audit trail
                 for result in filtered_results:
                     matched_text = converted_content[result.start:result.end]
                     redacted_entity_rows.append(f"Matched entity: {result.entity_type}, text: {matched_text}, score: {result.score}")
 
+                # Anonymize the detected PII
                 anonymizer_result = self.anonymizer.anonymize(
                     text=converted_content,
                     analyzer_results=filtered_results,
                     operators=self.operators,
                 )
-                # Create redacted turn without debug field
+                
+                # Create redacted turn
                 redacted_turn = {
                     'role': role,
                     'content': anonymizer_result.text
@@ -119,11 +146,9 @@ class DirectPIITransform(beam.DoFn):
                 # Preserve non-dict elements as-is
                 redacted_conversation.append(turn)
 
-        # Update the element with redacted conversation
+        # Update element with redacted conversation
         element["conversation_transcript"] = redacted_conversation
-        # Also create a flattened redacted transcript for compatibility
         element["redacted_transcript"] = deconstruct_transcript(redacted_conversation)
-        # Add row-level redacted_entity string
         element["redacted_entity"] = "; ".join(redacted_entity_rows)
         yield element
 

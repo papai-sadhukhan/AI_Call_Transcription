@@ -29,6 +29,7 @@ ner_model_configuration:
     # ---- Credentials / Codes ----
     PASSWORD: PASSWORD
     VERIFICATION_CODE: VERIFICATION_CODE
+    PASSCODE: PASSWORD
 
     # ---- Other Entities ----
     AGE: AGE
