@@ -2,8 +2,8 @@ nlp_engine_name: spacy
 models:
   -
     lang_code: en
-    model_name: en_core_web_lg
-    # model_name: en_core_web_trf  # Optional transformer version
+    model_name: en_core_web_lg  # Using large model (trf has dependency issues on Windows)
+    # model_name: en_core_web_trf  # Transformer: more accurate but requires compatible PyTorch
 
 ner_model_configuration:
   model_to_presidio_entity_mapping:

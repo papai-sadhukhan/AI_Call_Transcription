@@ -12,14 +12,20 @@ from apache_beam.options.pipeline_options import PipelineOptions, StandardOption
 from apache_beam.io.gcp.internal.clients import bigquery
 import re
 from utils.spoken_to_numeric import spoken_to_numeric
-from utils.customer_registry import (
-    SpokenAddressRecognizer, 
-    VerificationCodeRecognizer, 
-    BankLastDigitsRecognizer,
-    FalsePositiveFilterRecognizer,
-    AlphanumericPasswordRecognizer,
-    ContextBasedNameRecognizer,
-    FullAddressLineRecognizer
+# Import simplified recognizers (less custom logic, better accuracy)
+from utils.simplified_recognizers import (
+    SpokenEmailRecognizer,
+    ContextAwareAddressRecognizer,
+    UKPostcodeRecognizer,
+    SimplifiedNameRecognizer,
+    StrictFalsePositiveFilter,
+    AlphanumericPasswordRecognizer
+)
+# Import conversation-aware recognizers for context tracking
+from utils.conversation_aware_recognizers import (
+    ConversationContextTracker,
+    ContextAwareBankDigitsRecognizer,
+    ContextAwareNameRecognizer
 )
 
 
@@ -51,12 +57,14 @@ class DirectPIITransform(beam.DoFn):
     """
     Directly redacts PII from conversation structure without deconstructing.
     Processes each conversation turn individually to preserve structure.
+    Uses conversation context tracking for better accuracy.
     """
     def __init__(self, config):
         self.config = config
         self.analyzer = None
         self.anonymizer = None
         self.operators = {}
+        self.context_tracker = None
 
     def setup(self):
         # local imports for Presidio
@@ -76,21 +84,22 @@ class DirectPIITransform(beam.DoFn):
 
         self.analyzer = AnalyzerEngine(nlp_engine=provider.create_engine())
         self.anonymizer = AnonymizerEngine()
+        
+        # Initialize conversation context tracker
+        self.context_tracker = ConversationContextTracker()
 
-        # Register all custom recognizers from utils.customer_registry
+        # Register conversation-aware recognizers
         try:
-            from utils.customer_registry import SpokenPostcodeRecognizer, SpelledOutNameRecognizer
-            self.analyzer.registry.add_recognizer(SpokenAddressRecognizer())
-            self.analyzer.registry.add_recognizer(VerificationCodeRecognizer())
-            self.analyzer.registry.add_recognizer(BankLastDigitsRecognizer())
-            self.analyzer.registry.add_recognizer(SpokenPostcodeRecognizer())
-            self.analyzer.registry.add_recognizer(SpelledOutNameRecognizer())
+            self.analyzer.registry.add_recognizer(SpokenEmailRecognizer())
+            self.analyzer.registry.add_recognizer(ContextAwareBankDigitsRecognizer(self.context_tracker))
+            self.analyzer.registry.add_recognizer(ContextAwareAddressRecognizer())
+            self.analyzer.registry.add_recognizer(UKPostcodeRecognizer())
+            self.analyzer.registry.add_recognizer(SimplifiedNameRecognizer())
+            self.analyzer.registry.add_recognizer(ContextAwareNameRecognizer(self.context_tracker))
             self.analyzer.registry.add_recognizer(AlphanumericPasswordRecognizer())
-            # Note: FalsePositiveFilterRecognizer is not registered - it's a utility class, not a recognizer
-            self.analyzer.registry.add_recognizer(ContextBasedNameRecognizer())
-            self.analyzer.registry.add_recognizer(FullAddressLineRecognizer())
+            logging.info("✅ Using conversation-aware recognizers with context tracking")
         except Exception as e:
-            logging.warning("Could not register custom recognizer: %s", e)
+            logging.warning("Could not register recognizer: %s", e)
 
 
 
@@ -100,6 +109,13 @@ class DirectPIITransform(beam.DoFn):
         redacted_conversation = []
         redacted_entity_rows = []
         
+        # Reset context tracker for new conversation (don't create new instance, just reset state)
+        if self.context_tracker:
+            self.context_tracker.reset()
+        
+        # Keep track of previous turns for context
+        previous_turns_text = []
+        
         for turn in conversation:
             if isinstance(turn, dict) and 'content' in turn:
                 content = turn.get('content', '')
@@ -108,28 +124,68 @@ class DirectPIITransform(beam.DoFn):
                 # Convert spelled numbers and merge spelled letters
                 converted_content = spoken_to_numeric(content)
                 
-                # Analyze PII using Presidio with all registered custom recognizers
-                analyzer_result = self.analyzer.analyze(text=converted_content, language="en")
+                # Update context tracker if this is an agent turn
+                # (but don't analyze agent turns for PII - agents don't share their personal info)
+                if role.lower() == 'agent':
+                    if self.context_tracker:
+                        self.context_tracker.update_from_agent(content)
+                    # Skip PII analysis for agent turns
+                    redacted_conversation.append({
+                        "role": role,
+                        "content": converted_content
+                    })
+                    # Add agent turn to context for next customer turn
+                    previous_turns_text.append(converted_content)
+                    continue
                 
-                # Filter entities by score > 0.7 and remove false positives
+                # Build context-aware text: include previous turns + current turn
+                # This gives Presidio the full conversation context for better PII detection
+                if previous_turns_text:
+                    # Join previous turns with current turn, separated by space
+                    context_aware_text = " ".join(previous_turns_text) + " " + converted_content
+                    # Calculate offset where current turn starts in the context-aware text
+                    current_turn_offset = len(" ".join(previous_turns_text)) + 1
+                else:
+                    context_aware_text = converted_content
+                    current_turn_offset = 0
+                
+                # Analyze PII using Presidio with full conversation context
+                analyzer_result = self.analyzer.analyze(text=context_aware_text, language="en")
+                
+                # Filter results to only include entities found in the current turn (not previous turns)
+                # and apply score filtering and false positive filtering
                 filtered_results = []
                 for r in analyzer_result:
-                    if r.score > 0.7:
-                        matched_text = converted_content[r.start:r.end]
-                        context_start = max(0, r.start - 100)
-                        context_end = min(len(converted_content), r.end + 100)
-                        context = converted_content[context_start:context_end]
-                        
-                        # Use FalsePositiveFilterRecognizer to check for false positives
-                        if not FalsePositiveFilterRecognizer.is_false_positive(matched_text, r.entity_type, context):
-                            filtered_results.append(r)
+                    # Only process entities that are in the current turn's text range
+                    if r.start >= current_turn_offset:
+                        if r.score > 0.7:
+                            # Adjust indices to be relative to the current turn only
+                            adjusted_start = r.start - current_turn_offset
+                            adjusted_end = r.end - current_turn_offset
+                            matched_text = converted_content[adjusted_start:adjusted_end]
+                            
+                            context_start = max(0, adjusted_start - 100)
+                            context_end = min(len(converted_content), adjusted_end + 100)
+                            context = converted_content[context_start:context_end]
+                            
+                            # Use strict false positive filter (minimal filtering, trust spaCy)
+                            if not StrictFalsePositiveFilter.is_false_positive(matched_text, r.entity_type, context):
+                                # Create a new result with adjusted positions for the current turn
+                                from presidio_analyzer import RecognizerResult
+                                adjusted_result = RecognizerResult(
+                                    entity_type=r.entity_type,
+                                    start=adjusted_start,
+                                    end=adjusted_end,
+                                    score=r.score
+                                )
+                                filtered_results.append(adjusted_result)
                 
                 # Log matched entities for audit trail
                 for result in filtered_results:
                     matched_text = converted_content[result.start:result.end]
                     redacted_entity_rows.append(f"Matched entity: {result.entity_type}, text: {matched_text}, score: {result.score}")
 
-                # Anonymize the detected PII
+                # Anonymize the detected PII (only on current turn content)
                 anonymizer_result = self.anonymizer.anonymize(
                     text=converted_content,
                     analyzer_results=filtered_results,
@@ -142,6 +198,9 @@ class DirectPIITransform(beam.DoFn):
                     'content': anonymizer_result.text
                 }
                 redacted_conversation.append(redacted_turn)
+                
+                # Add customer turn to context for next turns
+                previous_turns_text.append(converted_content)
             else:
                 # Preserve non-dict elements as-is
                 redacted_conversation.append(turn)
