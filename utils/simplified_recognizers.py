@@ -23,7 +23,7 @@ class StrictFalsePositiveFilter:
         "YES", "NO", "YEAH", "YEP", "OKAY", "OK", "HOW", "WHAT",
         "WHERE", "WHEN", "WHY", "WHO", "CAN", "COULD", "WOULD",
         "SHOULD", "YOU", "YOUR", "YOU'RE", "I", "I'M", "MY", "THE", "AND", "FOR", "BUT",
-        "WE", "WE'RE", "THEY", "THEY'RE", "IT", "IT'S", "HE", "HE'S", "SHE", "SHE'S"
+        "WE", "WE'RE", "THEY", "THEY'RE", "IT", "IT'S", "HE", "HE'S", "SHE", "SHE'S", "US"
     }
     
     @classmethod
@@ -244,8 +244,8 @@ class ContextAwareAddressRecognizer(PatternRecognizer):
     def _contains_address_indicators(self, text: str) -> bool:
         """Check if text contains address-like components."""
         address_indicators = [
-            'FLAT', 'APARTMENT', 'NUMBER', 'STREET', 'ROAD', 'AVENUE',
-            'LANE', 'DRIVE', 'COURT', 'CLOSE', 'WAY', 'PLACE', 'MEASURE'
+            'FLAT', 'APARTMENT', 'STREET', 'ROAD', 'AVENUE',
+            'LANE', 'DRIVE', 'COURT', 'CLOSE', 'WAY', 'PLACE'
         ]
         return any(indicator in text for indicator in address_indicators)
     
@@ -449,37 +449,24 @@ class SimplifiedNameRecognizer(PatternRecognizer):
     """
     Minimal custom name logic - mostly trusts spaCy NER.
     Only handles specific patterns like greetings and spelled names.
+    No context keywords needed - full conversation context passed from main.py
     """
-    
-    NAME_CONTEXT_KEYWORDS = [
-        "name is", "my name", "called", "surname", "maiden name",
-        "christian name", "first name", "last name", "full name"
-    ]
     
     def __init__(self):
         super().__init__(
             supported_entity="PERSON",
             supported_language="en",
             name="SimplifiedNameRecognizer",
-            context=self.NAME_CONTEXT_KEYWORDS,
             deny_list=["__PLACEHOLDER__"]
         )
     
     def analyze(self, text, entities, nlp_artifacts):
         """
         Minimal custom name detection - trust spaCy for most cases.
+        Full conversation context is already provided from main.py
         """
         results = []
         text_upper = text.upper()
-        
-        # Check for name context (last 300 chars)
-        context_start = max(0, len(text_upper) - 300)
-        context_window = text_upper[context_start:].lower()
-        
-        has_name_context = any(keyword in context_window for keyword in self.NAME_CONTEXT_KEYWORDS)
-        
-        if not has_name_context:
-            return results
         
         # Pattern 1: Spelled-out names (e.g., "A P P L E" or "R O S E")
         spelled_pattern = r'\b([A-Z]\s+){2,}[A-Z]\b'

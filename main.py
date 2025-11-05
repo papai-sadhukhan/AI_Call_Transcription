@@ -88,16 +88,18 @@ class DirectPIITransform(beam.DoFn):
         # Initialize conversation context tracker
         self.context_tracker = ConversationContextTracker()
 
-        # Register conversation-aware recognizers
+        # Register custom recognizers
+        # Full conversation context is passed to analyzer for better accuracy
+        # Only bank digits use explicit context tracker (ambiguous without agent question)
         try:
             self.analyzer.registry.add_recognizer(SpokenEmailRecognizer())
             self.analyzer.registry.add_recognizer(ContextAwareBankDigitsRecognizer(self.context_tracker))
             self.analyzer.registry.add_recognizer(ContextAwareAddressRecognizer())
             self.analyzer.registry.add_recognizer(UKPostcodeRecognizer())
             self.analyzer.registry.add_recognizer(SimplifiedNameRecognizer())
-            self.analyzer.registry.add_recognizer(ContextAwareNameRecognizer(self.context_tracker))
+            self.analyzer.registry.add_recognizer(ContextAwareNameRecognizer())
             self.analyzer.registry.add_recognizer(AlphanumericPasswordRecognizer())
-            logging.info("✅ Using conversation-aware recognizers with context tracking")
+            logging.info("✅ Custom recognizers registered with full conversation context")
         except Exception as e:
             logging.warning("Could not register recognizer: %s", e)
 
@@ -292,6 +294,7 @@ def run(argv=None):
             project=bigquery_project,
             temp_dataset=dataset_ref,
         )
+        bigquery_data | "Print Read Row" >> beam.Map(lambda row: print(f"Read from BigQuery: {row}"))
 
         result = (
             bigquery_data
@@ -299,7 +302,7 @@ def run(argv=None):
             | "Direct PII Redaction" >> beam.ParDo(DirectPIITransform(config))
             | "Prepare Output" >> beam.Map(prepare_output_row)
         )
-
+        result | "Print Output Row" >> beam.Map(print)
         # Count records processed
         record_count = result | "Count Records" >> beam.combiners.Count.Globally()
         def print_count(count):

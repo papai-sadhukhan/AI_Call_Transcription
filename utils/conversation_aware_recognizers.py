@@ -9,7 +9,9 @@ from presidio_analyzer import EntityRecognizer, RecognizerResult, AnalysisExplan
 
 class ConversationContextTracker:
     """
-    Tracks conversation context to understand when customer is answering specific questions.
+    Simplified context tracker - only tracks truly ambiguous cases.
+    Most context is handled by passing full conversation to Presidio analyzer.
+    Only bank digits need explicit tracking due to their ambiguous nature.
     """
     
     def __init__(self):
@@ -18,41 +20,24 @@ class ConversationContextTracker:
     def reset(self):
         """Reset tracker for a new conversation."""
         self.last_agent_turn = ""
-        self.expecting = {
-            "bank_digits": False,
-            "postcode": False,
-            "full_name": False,
-            "address": False,
-            "email": False
-        }
+        self.expecting_bank_digits = False
     
     def update_from_agent(self, text: str):
         """Update context based on agent's question."""
         self.last_agent_turn = text.upper()
         
-        # Reset expectations
-        for key in self.expecting:
-            self.expecting[key] = False
-        
-        # Detect what agent is asking for
-        if "LAST TWO DIGIT" in self.last_agent_turn or "LAST 2 DIGIT" in self.last_agent_turn:
-            self.expecting["bank_digits"] = True
-        
-        if "POST CODE" in self.last_agent_turn or "POSTCODE" in self.last_agent_turn:
-            self.expecting["postcode"] = True
-        
-        if "FULL NAME" in self.last_agent_turn or "YOUR NAME" in self.last_agent_turn:
-            self.expecting["full_name"] = True
-        
-        if "ADDRESS" in self.last_agent_turn:
-            self.expecting["address"] = True
-        
-        if "EMAIL" in self.last_agent_turn:
-            self.expecting["email"] = True
+        # Only track bank digits - very specific and ambiguous without context
+        # Examples: "last two digits", "last 2 digits", "final two digits"
+        self.expecting_bank_digits = (
+            "LAST TWO DIGIT" in self.last_agent_turn or 
+            "LAST 2 DIGIT" in self.last_agent_turn or
+            "FINAL TWO DIGIT" in self.last_agent_turn or
+            "FINAL 2 DIGIT" in self.last_agent_turn
+        )
     
-    def is_expecting(self, entity_type: str) -> bool:
-        """Check if we're expecting a specific type of answer."""
-        return self.expecting.get(entity_type, False)
+    def is_expecting_bank_digits(self) -> bool:
+        """Check if we're expecting bank account digits."""
+        return self.expecting_bank_digits
 
 
 class ContextAwareBankDigitsRecognizer(EntityRecognizer):
@@ -74,7 +59,7 @@ class ContextAwareBankDigitsRecognizer(EntityRecognizer):
         results = []
         
         # Only detect if agent just asked for bank digits
-        if not self.context_tracker.is_expecting("bank_digits"):
+        if not self.context_tracker.is_expecting_bank_digits():
             return results
         
         # Pattern 1: "DOUBLE" + digit (from converted "DOUBLE ZERO" -> "DOUBLE 0")
@@ -117,12 +102,12 @@ class ContextAwareBankDigitsRecognizer(EntityRecognizer):
 
 class ContextAwareNameRecognizer(EntityRecognizer):
     """
-    Recognizes names with conversation context awareness.
-    Uses EntityRecognizer base class for full custom logic.
+    Recognizes names with pattern matching.
+    No longer uses ConversationContextTracker - full context is passed from main.py
+    Handles spelled names and names after "NAME IS" pattern.
     """
     
-    def __init__(self, context_tracker: ConversationContextTracker):
-        self.context_tracker = context_tracker
+    def __init__(self):
         super().__init__(
             supported_entities=["PERSON"],
             supported_language="en",
@@ -130,32 +115,11 @@ class ContextAwareNameRecognizer(EntityRecognizer):
         )
     
     def analyze(self, text, entities, nlp_artifacts):
-        """Detect names with context awareness."""
+        """Detect names using pattern matching."""
         results = []
         text_upper = text.upper()
         
-        # If agent just asked for full name, redact entire customer response
-        # (safer than trying to parse which words are names)
-        if self.context_tracker.is_expecting("full_name"):
-            # Exclude common filler responses
-            exclude = ["YES SIR", "NO SIR", "YEAH", "OKAY", "OK", "YES", "NO"]
-            if text_upper not in exclude and len(text.split()) <= 5:
-                # This is likely a name response
-                results.append(RecognizerResult(
-                    entity_type="PERSON",
-                    start=0,
-                    end=len(text),
-                    score=0.95,
-                    analysis_explanation=AnalysisExplanation(
-                        recognizer=self.__class__.__name__,
-                        pattern_name="full_name_response",
-                        pattern="context_based",
-                        original_score=0.95
-                    )
-                ))
-                return results
-        
-        # Pattern 1: Spelled-out names
+        # Pattern 1: Spelled-out names (e.g., "J O H N")
         spelled_pattern = r'\b([A-Z]\s+){2,}[A-Z]\b'
         for match in re.finditer(spelled_pattern, text_upper):
             spelled_text = match.group().replace(' ', '')
@@ -173,10 +137,12 @@ class ContextAwareNameRecognizer(EntityRecognizer):
                     )
                 ))
         
-        # Pattern 2: Names after "NAME IS"
+        # Pattern 2: Names after "NAME IS" or "CALLED"
         name_intro_patterns = [
             r'NAME\s+IS\s+((?:MISSUS|MISTER|MR|MRS|MS|MISS)\s+[A-Z]{3,})',
-            r'NAME\s+IS\s+([A-Z]{3,})',
+            r'NAME\s+IS\s+([A-Z]{3,}(?:\s+[A-Z]{3,})?)',
+            r'CALLED\s+((?:MISSUS|MISTER|MR|MRS|MS|MISS)\s+[A-Z]{3,})',
+            r'CALLED\s+([A-Z]{3,}(?:\s+[A-Z]{3,})?)',
         ]
         
         for pattern in name_intro_patterns:
