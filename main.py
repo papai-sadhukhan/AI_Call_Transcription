@@ -1,3 +1,8 @@
+"""
+APPROACH 1: STATEFUL ENTITY RECOGNIZER (EntityRecognizer with ConversationContextTracker)
+Uses context_tracker.update_from_agent() for stateful detection.
+NO previous turns text concatenation - only uses stateful tracker.
+"""
 import logging
 logging.getLogger("presidio-analyzer").setLevel(logging.ERROR)
 logging.getLogger('apache_beam.io.gcp.bigquery').setLevel(logging.ERROR)
@@ -11,21 +16,16 @@ import apache_beam as beam
 from apache_beam.options.pipeline_options import PipelineOptions, StandardOptions, TypeOptions, GoogleCloudOptions, WorkerOptions
 from apache_beam.io.gcp.internal.clients import bigquery
 import re
-from utils.spoken_to_numeric import spoken_to_numeric
-# Import simplified recognizers (less custom logic, better accuracy)
-from utils.simplified_recognizers import (
-    SpokenEmailRecognizer,
-    ContextAwareAddressRecognizer,
-    UKPostcodeRecognizer,
-    SimplifiedNameRecognizer,
-    StrictFalsePositiveFilter,
-    AlphanumericPasswordRecognizer
-)
-# Import conversation-aware recognizers for context tracking
-from utils.conversation_aware_recognizers import (
+# Import ONLY entity recognizers (stateful approach)
+from utils.entity_recognizers import (
     ConversationContextTracker,
-    ContextAwareBankDigitsRecognizer,
-    ContextAwareNameRecognizer
+    StatefulReferenceNumberRecognizer,
+    StatefulBankDigitsRecognizer,
+    StatefulNameRecognizer,
+    StatefulAddressRecognizer,
+    StatefulPostcodeRecognizer,
+    StatefulEmailRecognizer,
+    StatefulPasswordRecognizer
 )
 
 
@@ -33,7 +33,6 @@ def load_config(config_path):
     """Load configuration from the given config path"""
     with open(config_path, 'r') as f:
         return json.load(f)
-
 
 
 def deconstruct_transcript(conversation_transcript: list) -> str:
@@ -53,11 +52,10 @@ def deconstruct_transcript(conversation_transcript: list) -> str:
     return " ".join(content_parts)
 
 
-class DirectPIITransform(beam.DoFn):
+class EntityRecognizerPIITransform(beam.DoFn):
     """
-    Directly redacts PII from conversation structure without deconstructing.
-    Processes each conversation turn individually to preserve structure.
-    Uses conversation context tracking for better accuracy.
+    STATEFUL APPROACH: Uses ConversationContextTracker for ALL recognizers.
+    NO previous turns concatenation - pure stateful detection.
     """
     def __init__(self, config):
         self.config = config
@@ -85,111 +83,79 @@ class DirectPIITransform(beam.DoFn):
         self.analyzer = AnalyzerEngine(nlp_engine=provider.create_engine())
         self.anonymizer = AnonymizerEngine()
         
+        # Load deny_list from YAML for post-processing filter
+        self.deny_list = self._load_deny_list(config_path)
+        
         # Initialize conversation context tracker
         self.context_tracker = ConversationContextTracker()
 
-        # Register custom recognizers
-        # Full conversation context is passed to analyzer for better accuracy
-        # Only bank digits use explicit context tracker (ambiguous without agent question)
+        # Register ONLY stateful EntityRecognizers (all use context_tracker)
         try:
-            self.analyzer.registry.add_recognizer(SpokenEmailRecognizer())
-            self.analyzer.registry.add_recognizer(ContextAwareBankDigitsRecognizer(self.context_tracker))
-            self.analyzer.registry.add_recognizer(ContextAwareAddressRecognizer())
-            self.analyzer.registry.add_recognizer(UKPostcodeRecognizer())
-            self.analyzer.registry.add_recognizer(SimplifiedNameRecognizer())
-            self.analyzer.registry.add_recognizer(ContextAwareNameRecognizer())
-            self.analyzer.registry.add_recognizer(AlphanumericPasswordRecognizer())
-            logging.info("✅ Custom recognizers registered with full conversation context")
+            self.analyzer.registry.add_recognizer(StatefulReferenceNumberRecognizer(self.context_tracker))
+            self.analyzer.registry.add_recognizer(StatefulBankDigitsRecognizer(self.context_tracker))
+            self.analyzer.registry.add_recognizer(StatefulNameRecognizer(self.context_tracker))
+            self.analyzer.registry.add_recognizer(StatefulAddressRecognizer(self.context_tracker))
+            self.analyzer.registry.add_recognizer(StatefulPostcodeRecognizer(self.context_tracker))
+            self.analyzer.registry.add_recognizer(StatefulEmailRecognizer(self.context_tracker))
+            self.analyzer.registry.add_recognizer(StatefulPasswordRecognizer(self.context_tracker))
+            logging.info("✅ Stateful EntityRecognizers registered (using context_tracker)")
         except Exception as e:
             logging.warning("Could not register recognizer: %s", e)
 
+    def _load_deny_list(self, config_path):
+        """Load deny_list from YAML configuration file for post-processing filter."""
+        import yaml
+        try:
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f)
+                deny_list = config.get('deny_list', [])
+                # Convert to uppercase for case-insensitive matching
+                return [word.upper() for word in deny_list]
+        except Exception as e:
+            logging.warning(f"Could not load deny_list from YAML: {e}")
+            return []
 
 
     def process(self, element):
-        """Process each conversation turn directly for PII redaction"""
+        """Process each conversation turn with STATEFUL approach only"""
         conversation = element.get("conversation_transcript", [])
         redacted_conversation = []
         redacted_entity_rows = []
-        
-        # Reset context tracker for new conversation (don't create new instance, just reset state)
-        if self.context_tracker:
-            self.context_tracker.reset()
-        
-        # Keep track of previous turns for context
-        previous_turns_text = []
         
         for turn in conversation:
             if isinstance(turn, dict) and 'content' in turn:
                 content = turn.get('content', '')
                 role = turn.get('role', '')
                 
-                # Convert spelled numbers and merge spelled letters
-                converted_content = spoken_to_numeric(content)
+                # DON'T convert spoken numbers to digits - keep original text
+                # This is important for recognizing spelled-out numbers
                 
-                # Update context tracker if this is an agent turn
-                # (but don't analyze agent turns for PII - agents don't share their personal info)
-                if role.lower() == 'agent':
-                    if self.context_tracker:
-                        self.context_tracker.update_from_agent(content)
-                    # Skip PII analysis for agent turns
-                    redacted_conversation.append({
-                        "role": role,
-                        "content": converted_content
-                    })
-                    # Add agent turn to context for next customer turn
-                    previous_turns_text.append(converted_content)
-                    continue
+                # STATEFUL APPROACH: Analyze current turn FIRST (uses context from previous turn)
+                # Recognizers use context_tracker state set by PREVIOUS turn
+                analyzer_result = self.analyzer.analyze(text=content, language="en")
                 
-                # Build context-aware text: include previous turns + current turn
-                # This gives Presidio the full conversation context for better PII detection
-                if previous_turns_text:
-                    # Join previous turns with current turn, separated by space
-                    context_aware_text = " ".join(previous_turns_text) + " " + converted_content
-                    # Calculate offset where current turn starts in the context-aware text
-                    current_turn_offset = len(" ".join(previous_turns_text)) + 1
-                else:
-                    context_aware_text = converted_content
-                    current_turn_offset = 0
-                
-                # Analyze PII using Presidio with full conversation context
-                analyzer_result = self.analyzer.analyze(text=context_aware_text, language="en")
-                
-                # Filter results to only include entities found in the current turn (not previous turns)
-                # and apply score filtering and false positive filtering
+                # Filter results by score AND deny_list
+                # Remove false positives using deny_list from YAML
                 filtered_results = []
                 for r in analyzer_result:
-                    # Only process entities that are in the current turn's text range
-                    if r.start >= current_turn_offset:
-                        if r.score > 0.7:
-                            # Adjust indices to be relative to the current turn only
-                            adjusted_start = r.start - current_turn_offset
-                            adjusted_end = r.end - current_turn_offset
-                            matched_text = converted_content[adjusted_start:adjusted_end]
-                            
-                            context_start = max(0, adjusted_start - 100)
-                            context_end = min(len(converted_content), adjusted_end + 100)
-                            context = converted_content[context_start:context_end]
-                            
-                            # Use strict false positive filter (minimal filtering, trust spaCy)
-                            if not StrictFalsePositiveFilter.is_false_positive(matched_text, r.entity_type, context):
-                                # Create a new result with adjusted positions for the current turn
-                                from presidio_analyzer import RecognizerResult
-                                adjusted_result = RecognizerResult(
-                                    entity_type=r.entity_type,
-                                    start=adjusted_start,
-                                    end=adjusted_end,
-                                    score=r.score
-                                )
-                                filtered_results.append(adjusted_result)
+                    matched_text = content[r.start:r.end].upper()
+                    
+                    # Skip if text is in deny_list (case-insensitive)
+                    if matched_text in self.deny_list:
+                        continue
+                    
+                    # Skip if score is too low
+                    if r.score > 0.7:
+                        filtered_results.append(r)
                 
                 # Log matched entities for audit trail
                 for result in filtered_results:
-                    matched_text = converted_content[result.start:result.end]
-                    redacted_entity_rows.append(f"Matched entity: {result.entity_type}, text: {matched_text}, score: {result.score}")
+                    matched_text = content[result.start:result.end]
+                    redacted_entity_rows.append(f"[{role}] {result.entity_type}: {matched_text} (score: {result.score:.2f})")
 
-                # Anonymize the detected PII (only on current turn content)
+                # Anonymize the detected PII
                 anonymizer_result = self.anonymizer.anonymize(
-                    text=converted_content,
+                    text=content,
                     analyzer_results=filtered_results,
                     operators=self.operators,
                 )
@@ -201,8 +167,10 @@ class DirectPIITransform(beam.DoFn):
                 }
                 redacted_conversation.append(redacted_turn)
                 
-                # Add customer turn to context for next turns
-                previous_turns_text.append(converted_content)
+                # Update context tracker AFTER analysis for NEXT turn
+                # This sets expectations based on current turn for the following turn
+                if self.context_tracker:
+                    self.context_tracker.update_context(content)
             else:
                 # Preserve non-dict elements as-is
                 redacted_conversation.append(turn)
@@ -214,9 +182,8 @@ class DirectPIITransform(beam.DoFn):
         yield element
 
 
-
 def run(argv=None):
-    parser = argparse.ArgumentParser(description="Run the data pipeline with specified config.")
+    parser = argparse.ArgumentParser(description="Run the data pipeline with STATEFUL EntityRecognizer approach.")
     parser.add_argument('--config_path', type=str, required=True, help='Path to the config file (e.g., config_dev.json or config_prod.json)')
     parser.add_argument('--runner', type=str, default='DataflowRunner', help='Pipeline runner (default: DataflowRunner)')
     args, pipeline_args = parser.parse_known_args(argv)
@@ -233,8 +200,7 @@ def run(argv=None):
 
     options = PipelineOptions(pipeline_args)
 
-
-    print(f"🔄 Running in BIGQUERY mode with config: {args.config_path}")
+    print(f"🔄 Running STATEFUL ENTITY RECOGNIZER approach with config: {args.config_path}")
     # Set Dataflow job project
     if not options.get_all_options().get('runner') or options.get_all_options().get('runner') == 'DataflowRunner':
         options.view_as(StandardOptions).runner = 'DataflowRunner'
@@ -282,6 +248,7 @@ def run(argv=None):
             # Only output the required BQ target columns
             output_row['file_date'] = row.get('file_date')
             output_row['transaction_id'] = row.get('transaction_id')
+            output_row['transaction_identifier'] = row.get('transaction_identifier')
             output_row['transcription_redacted'] = row.get('transcription_redacted')
             output_row['redacted_entity'] = row.get('redacted_entity', '')
             output_row['load_dt'] = datetime.datetime.now().isoformat()
@@ -294,15 +261,15 @@ def run(argv=None):
             project=bigquery_project,
             temp_dataset=dataset_ref,
         )
-        bigquery_data | "Print Read Row" >> beam.Map(lambda row: print(f"Read from BigQuery: {row}"))
+        # bigquery_data | "Print Read Row" >> beam.Map(lambda row: print(f"Read from BigQuery: {row}"))
 
         result = (
             bigquery_data
             | "Parse Conversation" >> beam.Map(process_row)
-            | "Direct PII Redaction" >> beam.ParDo(DirectPIITransform(config))
+            | "Stateful Entity Recognition" >> beam.ParDo(EntityRecognizerPIITransform(config))
             | "Prepare Output" >> beam.Map(prepare_output_row)
         )
-        result | "Print Output Row" >> beam.Map(print)
+        # result | "Print Output Row" >> beam.Map(print)
         # Count records processed
         record_count = result | "Count Records" >> beam.combiners.Count.Globally()
         def print_count(count):

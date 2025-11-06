@@ -17,6 +17,7 @@
       "name": "td_call_redaction_p1",
       "columns": {
         "transaction_id": "transaction_id",
+        "transaction_identifier": "transaction_identifier",
         "transcription_file_dt": "file_date", 
         "input_transcript": "transcription"
       }
@@ -33,9 +34,9 @@
     }
   },
   "processing": {
-    "limit": 300,
+    "limit": 500,
     "batch_size": 100,
-    "selected_fields": ["transaction_id", "file_date", "transcription"],
+    "selected_fields": ["transaction_id", "transaction_identifier", "file_date", "transcription"],
     "condition" : "1=1"
   },
   "pii_entities": {
@@ -45,8 +46,9 @@
     "PHONE_NUMBER": "#####",
     "LOCATION": "#####",
     "ACCOUNT_NUMBER": "#####",
-    "CREDIT_CARD":"#####"  ,
+    "CREDIT_CARD":"#####",
     "POSTAL_CODE": "#####",
+    "UK_POSTCODE": "#####",
     "ADDRESS": "#####",
     "HOUSE_NUMBER": "#####",
     "STREET_NAME": "#####",
@@ -56,7 +58,8 @@
     "FINANCIAL_AMOUNT": "#####",
     "RELATIONSHIP_NAME": "#####",
     "STREET_ADDRESS": "#####",
-    "BANK_ACCOUNT_LAST_DIGITS": "####"
+    "BANK_ACCOUNT_LAST_DIGITS": "####",
+    "REFERENCE_NUMBER": "#####"
   },
   "dataflow": {
     "experiments": ["enable_bq_storage_api", "use_runner_v2"],

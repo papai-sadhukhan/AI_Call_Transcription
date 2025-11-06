@@ -13,18 +13,21 @@ ner_model_configuration:
     HCW: PERSON
     
     # ---- Contact / Communication ----
-    EMAIL: EMAIL
+    EMAIL: EMAIL_ADDRESS
     PHONE: PHONE_NUMBER
 
     # ---- Address / Location ----
-    FAC: LOCATION
-    GPE: LOCATION
-    LOC: LOCATION
+    # NOTE: LOCATION entities commented out to avoid false positives (e.g., "US" as pronoun)
+    # We rely on custom recognizers for ADDRESS and UK_POSTCODE detection
+    # FAC: LOCATION
+    # GPE: LOCATION
+    # LOC: LOCATION
     ADDRESS: ADDRESS
     STREET_ADDRESS: ADDRESS
     STREET_NAME: ADDRESS
     HOUSE_NUMBER: HOUSE_NUMBER
-    POSTCODE: POSTAL_CODE
+    POSTCODE: UK_POSTCODE
+    POSTAL_CODE: UK_POSTCODE
 
     # ---- Credentials / Codes ----
     PASSWORD: PASSWORD
@@ -52,3 +55,81 @@ ner_model_configuration:
     - WORK_OF_ART
     - NUMBERS
     - NUMBER
+    - DATE
+    - TIME
+    - MONEY
+    - ORG
+
+# Global deny list - words to never redact as PII
+# These common words are often false positives from NER
+deny_list:
+  - "THANK"
+  - "THANKS"
+  - "HELLO"
+  - "HI"
+  - "PLEASE"
+  - "YES"
+  - "NO"
+  - "YEAH"
+  - "YEP"
+  - "OKAY"
+  - "OK"
+  - "HOW"
+  - "WHAT"
+  - "WHERE"
+  - "WHEN"
+  - "WHY"
+  - "WHO"
+  - "CAN"
+  - "COULD"
+  - "WOULD"
+  - "SHOULD"
+  - "YOU"
+  - "YOUR"
+  - "YOU'RE"
+  - "YOURE"
+  - "YOU'LL"
+  - "YOULL"
+  - "YOU'VE"
+  - "YOUVE"
+  - "I"
+  - "I'M"
+  - "IM"
+  - "I'VE"
+  - "IVE"
+  - "I'LL"
+  - "ILL"
+  - "MY"
+  - "ME"
+  - "THE"
+  - "AND"
+  - "FOR"
+  - "BUT"
+  - "WE"
+  - "WE'RE"
+  - "WERE"
+  - "WE'VE"
+  - "WEVE"
+  - "WE'LL"
+  - "WELL"
+  - "THEY"
+  - "THEY'RE"
+  - "THEYRE"
+  - "THEY'VE"
+  - "THEYVE"
+  - "IT"
+  - "IT'S"
+  - "ITS"
+  - "HE"
+  - "HE'S"
+  - "HES"
+  - "SHE"
+  - "SHE'S"
+  - "SHES"
+  - "US"
+  - "SKY"
+  - "BUSINESS"
+  - "HERE"
+  - "THERE"
+  - "NOW"
+  - "THEN"
