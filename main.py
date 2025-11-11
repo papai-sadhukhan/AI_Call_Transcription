@@ -21,6 +21,7 @@ from utils.entity_recognizers import (
     ConversationContextTracker,
     StatefulReferenceNumberRecognizer,
     StatefulBankDigitsRecognizer,
+    StatefulCardDigitsRecognizer,
     StatefulNameRecognizer,
     StatefulAddressRecognizer,
     StatefulPostcodeRecognizer,
@@ -93,6 +94,7 @@ class EntityRecognizerPIITransform(beam.DoFn):
         try:
             self.analyzer.registry.add_recognizer(StatefulReferenceNumberRecognizer(self.context_tracker))
             self.analyzer.registry.add_recognizer(StatefulBankDigitsRecognizer(self.context_tracker))
+            self.analyzer.registry.add_recognizer(StatefulCardDigitsRecognizer(self.context_tracker))
             self.analyzer.registry.add_recognizer(StatefulNameRecognizer(self.context_tracker))
             self.analyzer.registry.add_recognizer(StatefulAddressRecognizer(self.context_tracker))
             self.analyzer.registry.add_recognizer(StatefulPostcodeRecognizer(self.context_tracker))

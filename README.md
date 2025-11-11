@@ -54,7 +54,10 @@ python -m spacy download en_core_web_lg
 ```bash
 python main.py --config_path config_dev.json --runner DirectRunner
 ```
-
+Run Local Pipeline - Prod
+```bash
+python main.py --config_path config_prod.json --runner DirectRunner
+```
 ## What's Different from Production
 
 | Production (Parent Directory) | Local Development (This Folder) |

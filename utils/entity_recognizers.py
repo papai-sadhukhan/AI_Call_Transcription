@@ -22,6 +22,7 @@ class ConversationContextTracker:
         self.last_turn_text = ""
         self.expecting_reference_number = False
         self.expecting_bank_digits = False
+        self.expecting_card_digits = False
         self.expecting_name = False
         self.expecting_address = False
         self.expecting_postcode = False
@@ -48,6 +49,18 @@ class ConversationContextTracker:
             "FINAL TWO DIGIT" in self.last_turn_text or
             "FINAL 2 DIGIT" in self.last_turn_text or
             "ACCOUNT NUMBER" in self.last_turn_text
+        )
+        
+        # Card digits detection (credit/debit card last 4 digits)
+        self.expecting_card_digits = (
+            "LAST FOUR DIGIT" in self.last_turn_text or
+            "LAST 4 DIGIT" in self.last_turn_text or
+            "FINAL FOUR DIGIT" in self.last_turn_text or
+            "FINAL 4 DIGIT" in self.last_turn_text or
+            "CARD NUMBER" in self.last_turn_text or
+            "LONG CARD NUMBER" in self.last_turn_text or
+            "CREDIT CARD" in self.last_turn_text or
+            "DEBIT CARD" in self.last_turn_text
         )
         
         # Name detection
@@ -226,6 +239,85 @@ class StatefulBankDigitsRecognizer(EntityRecognizer):
                         pattern_name="context_based_bank_digits",
                         pattern=digit_pattern,
                         original_score=0.95
+                    )
+                ))
+        
+        return results
+
+
+class StatefulCardDigitsRecognizer(EntityRecognizer):
+    """
+    Recognizes credit/debit card last 4 digits only when agent asked for them.
+    Uses ConversationContextTracker for stateful detection.
+    """
+    
+    def __init__(self, context_tracker: ConversationContextTracker):
+        self.context_tracker = context_tracker
+        super().__init__(
+            supported_entities=["CREDIT_CARD"],
+            supported_language="en",
+            name="StatefulCardDigitsRecognizer"
+        )
+    
+    def analyze(self, text, entities, nlp_artifacts):
+        """Detect card digits only if we're expecting them."""
+        results = []
+        
+        # Only detect if agent just asked for card digits
+        if not self.context_tracker.expecting_card_digits:
+            return results
+        
+        # Pattern 1: Four separate digits or number words (e.g., "NINE ZERO THREE FOUR" or "9 0 3 4")
+        # Look for sequences of 4 single digits/number words
+        number_words = r'(?:ZERO|ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|\d)'
+        four_digits_pattern = rf'\b{number_words}\s+{number_words}\s+{number_words}\s+{number_words}\b'
+        
+        for match in re.finditer(four_digits_pattern, text.upper()):
+            results.append(RecognizerResult(
+                entity_type="CREDIT_CARD",
+                start=match.start(),
+                end=match.end(),
+                score=0.95,
+                analysis_explanation=AnalysisExplanation(
+                    recognizer=self.__class__.__name__,
+                    pattern_name="four_card_digits",
+                    pattern=four_digits_pattern,
+                    original_score=0.95
+                )
+            ))
+        
+        # Pattern 2: Four-digit number (e.g., "9034")
+        # Commented out - only spelled-out digits observed in data
+        # if not results:
+        #     four_digit_number = r'\b\d{4}\b'
+        #     for match in re.finditer(four_digit_number, text):
+        #         results.append(RecognizerResult(
+        #             entity_type="CREDIT_CARD",
+        #             start=match.start(),
+        #             end=match.end(),
+        #             score=0.95,
+        #             analysis_explanation=AnalysisExplanation(
+        #                 recognizer=self.__class__.__name__,
+        #                 pattern_name="four_digit_number",
+        #                 pattern=four_digit_number,
+        #                 original_score=0.95
+        #             )
+        #         ))
+        
+        # Pattern 3: Any single digits in the response (fallback)
+        if not results:
+            digit_pattern = r'\b\d\b'
+            for match in re.finditer(digit_pattern, text):
+                results.append(RecognizerResult(
+                    entity_type="CREDIT_CARD",
+                    start=match.start(),
+                    end=match.end(),
+                    score=0.90,
+                    analysis_explanation=AnalysisExplanation(
+                        recognizer=self.__class__.__name__,
+                        pattern_name="single_card_digit",
+                        pattern=digit_pattern,
+                        original_score=0.90
                     )
                 ))
         
