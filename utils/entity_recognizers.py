@@ -14,7 +14,14 @@ class ConversationContextTracker:
     Resets on each turn to maintain turn-level context.
     """
     
-    def __init__(self):
+    def __init__(self, context_indicators: Dict = None):
+        """
+        Initialize with context indicators from config.
+        
+        Args:
+            context_indicators: Dictionary containing context words/phrases for each entity type
+        """
+        self.context_indicators = context_indicators or {}
         self.reset()
     
     def reset(self):
@@ -35,73 +42,51 @@ class ConversationContextTracker:
         self.last_turn_text = text.upper()
         
         # Reference number detection
-        self.expecting_reference_number = (
-            "REFERENCE NUMBER" in self.last_turn_text or
-            "REFERENCE NO" in self.last_turn_text or
-            "REF NUMBER" in self.last_turn_text or
-            "REF NO" in self.last_turn_text
+        reference_indicators = self.context_indicators.get('reference_number', [])
+        self.expecting_reference_number = any(
+            indicator in self.last_turn_text for indicator in reference_indicators
         )
         
         # Bank digits detection
-        self.expecting_bank_digits = (
-            "LAST TWO DIGIT" in self.last_turn_text or 
-            "LAST 2 DIGIT" in self.last_turn_text or
-            "FINAL TWO DIGIT" in self.last_turn_text or
-            "FINAL 2 DIGIT" in self.last_turn_text or
-            "ACCOUNT NUMBER" in self.last_turn_text
+        bank_indicators = self.context_indicators.get('bank_digits', [])
+        self.expecting_bank_digits = any(
+            indicator in self.last_turn_text for indicator in bank_indicators
         )
         
         # Card digits detection (credit/debit card last 4 digits)
-        self.expecting_card_digits = (
-            "LAST FOUR DIGIT" in self.last_turn_text or
-            "LAST 4 DIGIT" in self.last_turn_text or
-            "FINAL FOUR DIGIT" in self.last_turn_text or
-            "FINAL 4 DIGIT" in self.last_turn_text or
-            "CARD NUMBER" in self.last_turn_text or
-            "LONG CARD NUMBER" in self.last_turn_text or
-            "CREDIT CARD" in self.last_turn_text or
-            "DEBIT CARD" in self.last_turn_text
+        card_indicators = self.context_indicators.get('card_digits', [])
+        self.expecting_card_digits = any(
+            indicator in self.last_turn_text for indicator in card_indicators
         )
         
         # Name detection
-        self.expecting_name = (
-            "NAME" in self.last_turn_text or
-            "CALLED" in self.last_turn_text or
-            "SURNAME" in self.last_turn_text or
-            "FIRST NAME" in self.last_turn_text or
-            "MAIDEN NAME" in self.last_turn_text
+        name_indicators = self.context_indicators.get('name', [])
+        self.expecting_name = any(
+            indicator in self.last_turn_text for indicator in name_indicators
         )
         
         # Address detection
-        self.expecting_address = (
-            "ADDRESS" in self.last_turn_text or
-            "FIRST LINE" in self.last_turn_text or
-            "LINE OF" in self.last_turn_text or
-            "FLAT" in self.last_turn_text or
-            "STREET" in self.last_turn_text
+        address_indicators = self.context_indicators.get('address', [])
+        self.expecting_address = any(
+            indicator in self.last_turn_text for indicator in address_indicators
         )
         
         # Postcode detection
-        self.expecting_postcode = (
-            "POSTCODE" in self.last_turn_text or
-            "POST CODE" in self.last_turn_text or
-            "POSTAL CODE" in self.last_turn_text
+        postcode_indicators = self.context_indicators.get('postcode', [])
+        self.expecting_postcode = any(
+            indicator in self.last_turn_text for indicator in postcode_indicators
         )
         
         # Email detection
-        self.expecting_email = (
-            "EMAIL" in self.last_turn_text or
-            "E-MAIL" in self.last_turn_text or
-            "E MAIL" in self.last_turn_text
+        email_indicators = self.context_indicators.get('email', [])
+        self.expecting_email = any(
+            indicator in self.last_turn_text for indicator in email_indicators
         )
         
         # Password detection
-        self.expecting_password = (
-            "PASSWORD" in self.last_turn_text or
-            "PASS WORD" in self.last_turn_text or
-            "PASSCODE" in self.last_turn_text or
-            "VERIFICATION CODE" in self.last_turn_text or
-            "PIN" in self.last_turn_text
+        password_indicators = self.context_indicators.get('password', [])
+        self.expecting_password = any(
+            indicator in self.last_turn_text for indicator in password_indicators
         )
 
 
@@ -112,8 +97,9 @@ class StatefulReferenceNumberRecognizer(EntityRecognizer):
     Uses ConversationContextTracker for stateful detection.
     """
     
-    def __init__(self, context_tracker: ConversationContextTracker):
+    def __init__(self, context_tracker: ConversationContextTracker, context_indicators: Dict = None):
         self.context_tracker = context_tracker
+        self.context_indicators = context_indicators or {}
         super().__init__(
             supported_entities=["REFERENCE_NUMBER"],
             supported_language="en",
@@ -131,9 +117,11 @@ class StatefulReferenceNumberRecognizer(EntityRecognizer):
         
         # Pattern 1: Spelled-out numbers (e.g., "ONE NINE ONE TWO ONE TWO EIGHT")
         # Look for sequences of number words
-        number_words = ['ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
-                       'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 
-                       'SEVENTEEN', 'EIGHTEEN', 'NINETEEN', 'TWENTY']
+        number_words = self.context_indicators.get('number_words', [
+            'ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
+            'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 
+            'SEVENTEEN', 'EIGHTEEN', 'NINETEEN', 'TWENTY'
+        ])
         
         # Find sequences of number words (at least 5 for reference numbers)
         words = text_upper.split()
@@ -192,8 +180,9 @@ class StatefulBankDigitsRecognizer(EntityRecognizer):
     Uses ConversationContextTracker for stateful detection.
     """
     
-    def __init__(self, context_tracker: ConversationContextTracker):
+    def __init__(self, context_tracker: ConversationContextTracker, context_indicators: Dict = None):
         self.context_tracker = context_tracker
+        self.context_indicators = context_indicators or {}
         super().__init__(
             supported_entities=["BANK_ACCOUNT_LAST_DIGITS"],
             supported_language="en",
@@ -251,8 +240,9 @@ class StatefulCardDigitsRecognizer(EntityRecognizer):
     Uses ConversationContextTracker for stateful detection.
     """
     
-    def __init__(self, context_tracker: ConversationContextTracker):
+    def __init__(self, context_tracker: ConversationContextTracker, context_indicators: Dict = None):
         self.context_tracker = context_tracker
+        self.context_indicators = context_indicators or {}
         super().__init__(
             supported_entities=["CREDIT_CARD"],
             supported_language="en",
@@ -330,8 +320,9 @@ class StatefulNameRecognizer(EntityRecognizer):
     Uses ConversationContextTracker for stateful detection.
     """
     
-    def __init__(self, context_tracker: ConversationContextTracker):
+    def __init__(self, context_tracker: ConversationContextTracker, context_indicators: Dict = None):
         self.context_tracker = context_tracker
+        self.context_indicators = context_indicators or {}
         super().__init__(
             supported_entities=["PERSON"],
             supported_language="en",
@@ -347,7 +338,31 @@ class StatefulNameRecognizer(EntityRecognizer):
         if not self.context_tracker.expecting_name:
             return results
         
-        # Pattern 1: Spelled-out names (e.g., "J O H N")
+        words = text_upper.split()
+        
+        # Check if response is primarily single letters (spelled-out name like "G R A C E")
+        # or contains word(s) followed by spelled letters
+        single_letters = [w for w in words if len(w) == 1 and w.isalpha()]
+        
+        # Pattern 1: Response with spelled-out name (e.g., "GREY G R A C E" or just "G R A C E")
+        # If we have 3+ single letters in response, likely entire response is the name
+        if len(single_letters) >= 3:
+            # Redact entire response as it's the name being spelled out
+            results.append(RecognizerResult(
+                entity_type="PERSON",
+                start=0,
+                end=len(text),
+                score=0.95,
+                analysis_explanation=AnalysisExplanation(
+                    recognizer=self.__class__.__name__,
+                    pattern_name="spelled_name_full_response",
+                    pattern="context_based_full_redaction",
+                    original_score=0.95
+                )
+            ))
+            return results
+        
+        # Pattern 2: Spelled-out names within text (e.g., "MY NAME IS J O H N SMITH")
         spelled_pattern = r'\b([A-Z]\s+){2,}[A-Z]\b'
         for match in re.finditer(spelled_pattern, text_upper):
             spelled_text = match.group().replace(' ', '')
@@ -365,7 +380,7 @@ class StatefulNameRecognizer(EntityRecognizer):
                     )
                 ))
         
-        # Pattern 2: Names after "NAME IS" or "CALLED"
+        # Pattern 3: Names after "NAME IS" or "CALLED"
         name_intro_patterns = [
             r'NAME\s+IS\s+((?:MISSUS|MISTER|MR|MRS|MS|MISS)\s+[A-Z]{3,})',
             r'NAME\s+IS\s+([A-Z]{3,}(?:\s+[A-Z]{3,})?)',
@@ -392,6 +407,26 @@ class StatefulNameRecognizer(EntityRecognizer):
                         )
                     ))
         
+        # Pattern 4: If short response with all caps words (likely a name as direct answer)
+        # e.g., "JOHN SMITH" or "SMITH" as a direct response
+        if not results and len(words) <= 3 and len(words) >= 1:
+            # Check if all words are capitalized and at least 3 chars
+            all_caps_words = [w for w in words if w.isalpha() and len(w) >= 3]
+            if len(all_caps_words) == len(words):
+                # Likely a name given as direct answer
+                results.append(RecognizerResult(
+                    entity_type="PERSON",
+                    start=0,
+                    end=len(text),
+                    score=0.88,
+                    analysis_explanation=AnalysisExplanation(
+                        recognizer=self.__class__.__name__,
+                        pattern_name="direct_name_response",
+                        pattern="context_based_full_redaction",
+                        original_score=0.88
+                    )
+                ))
+        
         return results
 
 
@@ -401,8 +436,9 @@ class StatefulAddressRecognizer(EntityRecognizer):
     Uses ConversationContextTracker for stateful detection.
     """
     
-    def __init__(self, context_tracker: ConversationContextTracker):
+    def __init__(self, context_tracker: ConversationContextTracker, context_indicators: Dict = None):
         self.context_tracker = context_tracker
+        self.context_indicators = context_indicators or {}
         super().__init__(
             supported_entities=["ADDRESS"],
             supported_language="en",
@@ -425,10 +461,13 @@ class StatefulAddressRecognizer(EntityRecognizer):
             r'\b\d{1,4}\s+[A-Z]+(?:\s+[A-Z]+){1,5}\b'
         ]
         
+        street_indicators = self.context_indicators.get('street_indicators', [
+            'STREET', 'ROAD', 'AVENUE', 'LANE', 'DRIVE', 'WAY', 'CLOSE', 'COURT', 'PLACE', 'SQUARE', 'GARDENS'
+        ])
+        
         for pattern in address_patterns:
             for match in re.finditer(pattern, text_upper):
                 matched_text = match.group()
-                street_indicators = ['STREET', 'ROAD', 'AVENUE', 'LANE', 'DRIVE', 'WAY', 'CLOSE', 'COURT', 'PLACE', 'SQUARE', 'GARDENS']
                 has_street_word = any(word in matched_text for word in street_indicators)
                 
                 # Detect if it looks like address
@@ -448,13 +487,12 @@ class StatefulAddressRecognizer(EntityRecognizer):
         
         # Pattern 2: Spelled-out addresses (e.g., "NUMBER TWO MILTON DRIVE")
         # Look for: "NUMBER" + number word + street name + street type
-        number_words = ['ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
-                       'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 
-                       'SEVENTEEN', 'EIGHTEEN', 'NINETEEN', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY',
-                       'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY', 'HUNDRED']
-        
-        street_indicators = ['STREET', 'ROAD', 'AVENUE', 'LANE', 'DRIVE', 'WAY', 'CLOSE', 'COURT', 
-                            'PLACE', 'SQUARE', 'GARDENS', 'TERRACE', 'CRESCENT', 'BOULEVARD']
+        number_words = self.context_indicators.get('number_words', [
+            'ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
+            'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 
+            'SEVENTEEN', 'EIGHTEEN', 'NINETEEN', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY',
+            'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY', 'HUNDRED'
+        ])
         
         # Pattern: "NUMBER" + number_word + street_name + street_type
         spelled_pattern = r'\bNUMBER\s+(?:' + '|'.join(number_words) + r')\s+[A-Z]+(?:\s+[A-Z]+)*?\s+(?:' + '|'.join(street_indicators) + r')\b'
@@ -483,8 +521,9 @@ class StatefulPostcodeRecognizer(EntityRecognizer):
     Uses ConversationContextTracker for stateful detection.
     """
     
-    def __init__(self, context_tracker: ConversationContextTracker):
+    def __init__(self, context_tracker: ConversationContextTracker, context_indicators: Dict = None):
         self.context_tracker = context_tracker
+        self.context_indicators = context_indicators or {}
         super().__init__(
             supported_entities=["UK_POSTCODE"],
             supported_language="en",
@@ -599,8 +638,9 @@ class StatefulEmailRecognizer(EntityRecognizer):
     Uses ConversationContextTracker for stateful detection.
     """
     
-    def __init__(self, context_tracker: ConversationContextTracker):
+    def __init__(self, context_tracker: ConversationContextTracker, context_indicators: Dict = None):
         self.context_tracker = context_tracker
+        self.context_indicators = context_indicators or {}
         super().__init__(
             supported_entities=["EMAIL_ADDRESS"],
             supported_language="en",
@@ -646,8 +686,9 @@ class StatefulPasswordRecognizer(EntityRecognizer):
     Uses ConversationContextTracker for stateful detection.
     """
     
-    def __init__(self, context_tracker: ConversationContextTracker):
+    def __init__(self, context_tracker: ConversationContextTracker, context_indicators: Dict = None):
         self.context_tracker = context_tracker
+        self.context_indicators = context_indicators or {}
         super().__init__(
             supported_entities=["PASSWORD"],
             supported_language="en",
@@ -663,26 +704,45 @@ class StatefulPasswordRecognizer(EntityRecognizer):
         if not self.context_tracker.expecting_password:
             return results
         
-        # Patterns for alphanumeric passwords
-        password_patterns = [
-            r'\bCAPITAL\s+(?:[A-Z]|\d+)(?:\s+(?:[A-Z]|\d+)){3,}\b',
-            r'\b(?:[A-Z]|\d+)(?:\s+(?:[A-Z]|\d+)){3,}\b',
-            r'\b[A-Z]{1,3}[0-9]{2,4}[A-Z]{1,3}\b',
-        ]
+        # Strategy: Check if response contains alphanumeric password pattern
+        # Look for sequences with both letters and numbers/number words
+        words = text_upper.split()
         
-        for pattern in password_patterns:
-            for match in re.finditer(pattern, text_upper):
-                results.append(RecognizerResult(
-                    entity_type="PASSWORD",
-                    start=match.start(),
-                    end=match.end(),
-                    score=0.95,
-                    analysis_explanation=AnalysisExplanation(
-                        recognizer=self.__class__.__name__,
-                        pattern_name="alphanumeric_password",
-                        pattern=pattern,
-                        original_score=0.95
-                    )
-                ))
+        # Check if text contains both letters and numbers/number words
+        has_letters = bool(re.search(r'\b[A-Z]\b', text_upper))
+        has_numbers = bool(re.search(r'\b(?:' + '|'.join(self.context_indicators.get('number_words', [
+            'ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'
+        ])) + r'|\d+)\b', text_upper))
+        
+        # If the response contains alphanumeric content (letters + numbers), redact entire response
+        # This handles cases like "THREE THREE TWO C D C Q I J SEVEN SIX EIGHT E"
+        if has_letters and has_numbers and len(words) >= 4:
+            # Redact the entire response as it's likely a password
+            results.append(RecognizerResult(
+                entity_type="PASSWORD",
+                start=0,
+                end=len(text),
+                score=0.95,
+                analysis_explanation=AnalysisExplanation(
+                    recognizer=self.__class__.__name__,
+                    pattern_name="alphanumeric_password_full_response",
+                    pattern="context_based_full_redaction",
+                    original_score=0.95
+                )
+            ))
+        elif has_letters and len(words) >= 6:
+            # If just letters but long sequence, likely a password too
+            results.append(RecognizerResult(
+                entity_type="PASSWORD",
+                start=0,
+                end=len(text),
+                score=0.90,
+                analysis_explanation=AnalysisExplanation(
+                    recognizer=self.__class__.__name__,
+                    pattern_name="letter_password_full_response",
+                    pattern="context_based_full_redaction",
+                    original_score=0.90
+                )
+            ))
         
         return results

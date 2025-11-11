@@ -6,7 +6,8 @@
     "staging_location": "gs://skyuk-uk-poc-verint-transc-genai-prod/staging",
     "temp_bigquery_dataset" : "dataflow_temp_dataset",
     "subnetwork": "<>",
-    "job_name": "call-transcript-redaction-job"
+    "job_name": "call-transcript-redaction-job",
+    "service_account": ""
   },
   "dataset": {
     "input": "cdn10",
@@ -40,29 +41,132 @@
     "condition" : "1=1"
   },
   "pii_entities": {
-    "PERSON": "#####",
-    "AGE": "#####", 
-    "EMAIL_ADDRESS": "#####",
-    "PHONE_NUMBER": "#####",
-    "LOCATION": "#####",
-    "ACCOUNT_NUMBER": "#####",
-    "CREDIT_CARD":"#####",
-    "POSTAL_CODE": "#####",
-    "UK_POSTCODE": "#####",
-    "ADDRESS": "#####",
-    "HOUSE_NUMBER": "#####",
-    "STREET_NAME": "#####",
-    "PASSWORD": "#####",
-    "VERIFICATION_CODE": "#####",
-    "MONEY": "#####",
-    "FINANCIAL_AMOUNT": "#####",
-    "RELATIONSHIP_NAME": "#####",
-    "STREET_ADDRESS": "#####",
-    "BANK_ACCOUNT_LAST_DIGITS": "####",
-    "REFERENCE_NUMBER": "#####"
+    "PERSON": "[REDACTED NAME]",
+    "AGE": "[REDACTED AGE]", 
+    "EMAIL_ADDRESS": "[REDACTED EMAIL]",
+    "PHONE_NUMBER": "[REDACTED PHONE]",
+    "LOCATION": "[REDACTED LOCATION]",
+    "ACCOUNT_NUMBER": "[REDACTED ACCOUNT]",
+    "CREDIT_CARD":"[REDACTED CARD]",
+    "POSTAL_CODE": "[REDACTED POSTCODE]",
+    "UK_POSTCODE": "[REDACTED POSTCODE]",
+    "ADDRESS": "[REDACTED ADDRESS]",
+    "HOUSE_NUMBER": "[REDACTED HOUSE NUMBER]",
+    "STREET_NAME": "[REDACTED STREET]",
+    "PASSWORD": "[REDACTED PASSWORD]",
+    "VERIFICATION_CODE": "[REDACTED CODE]",
+    "MONEY": "[REDACTED AMOUNT]",
+    "FINANCIAL_AMOUNT": "[REDACTED AMOUNT]",
+    "RELATIONSHIP_NAME": "[REDACTED RELATIONSHIP]",
+    "STREET_ADDRESS": "[REDACTED STREET ADDRESS]",
+    "BANK_ACCOUNT_LAST_DIGITS": "[REDACTED ACCOUNT DIGITS]",
+    "REFERENCE_NUMBER": "[REDACTED REFERENCE]"
   },
   "dataflow": {
     "experiments": ["enable_bq_storage_api", "use_runner_v2"],
     "write_method": "STREAMING_INSERTS"
+  },
+  "context_indicators": {
+    "reference_number": [
+      "REFERENCE NUMBER",
+      "REFERENCE NO",
+      "REF NUMBER",
+      "REF NO"
+    ],
+    "bank_digits": [
+      "LAST TWO DIGIT",
+      "LAST 2 DIGIT",
+      "FINAL TWO DIGIT",
+      "FINAL 2 DIGIT",
+      "ACCOUNT NUMBER"
+    ],
+    "card_digits": [
+      "LAST FOUR DIGIT",
+      "LAST 4 DIGIT",
+      "FINAL FOUR DIGIT",
+      "FINAL 4 DIGIT",
+      "CARD NUMBER",
+      "LONG CARD NUMBER",
+      "CREDIT CARD",
+      "DEBIT CARD"
+    ],
+    "name": [
+      "NAME",
+      "CALLED",
+      "SURNAME",
+      "FIRST NAME",
+      "MAIDEN NAME"
+    ],
+    "address": [
+      "ADDRESS",
+      "FIRST LINE",
+      "LINE OF",
+      "FLAT",
+      "STREET"
+    ],
+    "postcode": [
+      "POSTCODE",
+      "POST CODE",
+      "POSTAL CODE"
+    ],
+    "email": [
+      "EMAIL",
+      "E-MAIL",
+      "E MAIL"
+    ],
+    "password": [
+      "PASSWORD",
+      "PASS WORD",
+      "PASSCODE",
+      "VERIFICATION CODE",
+      "PIN"
+    ],
+    "number_words": [
+      "ZERO",
+      "ONE",
+      "TWO",
+      "THREE",
+      "FOUR",
+      "FIVE",
+      "SIX",
+      "SEVEN",
+      "EIGHT",
+      "NINE",
+      "TEN",
+      "ELEVEN",
+      "TWELVE",
+      "THIRTEEN",
+      "FOURTEEN",
+      "FIFTEEN",
+      "SIXTEEN",
+      "SEVENTEEN",
+      "EIGHTEEN",
+      "NINETEEN",
+      "TWENTY",
+      "THIRTY",
+      "FORTY",
+      "FIFTY",
+      "SIXTY",
+      "SEVENTY",
+      "EIGHTY",
+      "NINETY",
+      "HUNDRED"
+    ],
+    "street_indicators": [
+      "STREET",
+      "ROAD",
+      "AVENUE",
+      "LANE",
+      "DRIVE",
+      "WAY",
+      "CLOSE",
+      "COURT",
+      "PLACE",
+      "SQUARE",
+      "GARDENS",
+      "TERRACE",
+      "CRESCENT",
+      "BOULEVARD"
+    ]
   }
 }

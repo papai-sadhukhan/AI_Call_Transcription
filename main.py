@@ -87,20 +87,23 @@ class EntityRecognizerPIITransform(beam.DoFn):
         # Load deny_list from YAML for post-processing filter
         self.deny_list = self._load_deny_list(config_path)
         
-        # Initialize conversation context tracker
-        self.context_tracker = ConversationContextTracker()
+        # Get context indicators from config
+        context_indicators = self.config.get('context_indicators', {})
+        
+        # Initialize conversation context tracker with config
+        self.context_tracker = ConversationContextTracker(context_indicators)
 
-        # Register ONLY stateful EntityRecognizers (all use context_tracker)
+        # Register ONLY stateful EntityRecognizers (all use context_tracker and context_indicators)
         try:
-            self.analyzer.registry.add_recognizer(StatefulReferenceNumberRecognizer(self.context_tracker))
-            self.analyzer.registry.add_recognizer(StatefulBankDigitsRecognizer(self.context_tracker))
-            self.analyzer.registry.add_recognizer(StatefulCardDigitsRecognizer(self.context_tracker))
-            self.analyzer.registry.add_recognizer(StatefulNameRecognizer(self.context_tracker))
-            self.analyzer.registry.add_recognizer(StatefulAddressRecognizer(self.context_tracker))
-            self.analyzer.registry.add_recognizer(StatefulPostcodeRecognizer(self.context_tracker))
-            self.analyzer.registry.add_recognizer(StatefulEmailRecognizer(self.context_tracker))
-            self.analyzer.registry.add_recognizer(StatefulPasswordRecognizer(self.context_tracker))
-            logging.info("✅ Stateful EntityRecognizers registered (using context_tracker)")
+            self.analyzer.registry.add_recognizer(StatefulReferenceNumberRecognizer(self.context_tracker, context_indicators))
+            self.analyzer.registry.add_recognizer(StatefulBankDigitsRecognizer(self.context_tracker, context_indicators))
+            self.analyzer.registry.add_recognizer(StatefulCardDigitsRecognizer(self.context_tracker, context_indicators))
+            self.analyzer.registry.add_recognizer(StatefulNameRecognizer(self.context_tracker, context_indicators))
+            self.analyzer.registry.add_recognizer(StatefulAddressRecognizer(self.context_tracker, context_indicators))
+            self.analyzer.registry.add_recognizer(StatefulPostcodeRecognizer(self.context_tracker, context_indicators))
+            self.analyzer.registry.add_recognizer(StatefulEmailRecognizer(self.context_tracker, context_indicators))
+            self.analyzer.registry.add_recognizer(StatefulPasswordRecognizer(self.context_tracker, context_indicators))
+            logging.info("✅ Stateful EntityRecognizers registered (using context_tracker and context_indicators from config)")
         except Exception as e:
             logging.warning("Could not register recognizer: %s", e)
 
@@ -199,6 +202,16 @@ def run(argv=None):
 
     # Ensure runner is set
     pipeline_args.append(f'--runner={args.runner}')
+    
+    # Add dataflow service options if specified in config
+    if 'dataflow_service_options' in config.get('dataflow', {}):
+        for option in config['dataflow']['dataflow_service_options']:
+            pipeline_args.append(f'--dataflow_service_options={option}')
+    
+    # Add worker service account if specified in config
+    if 'worker_service_account' in config.get('project', {}):
+        pipeline_args.append(f'--service_account_email={config["project"]["worker_service_account"]}')
+        print(f"✅ Using worker service account: {config['project']['worker_service_account']}")
 
     options = PipelineOptions(pipeline_args)
 
@@ -211,6 +224,11 @@ def run(argv=None):
         google_cloud_options.region = config['project']['region']
         google_cloud_options.staging_location = config['project']['staging_location']
         google_cloud_options.job_name = config['project']['job_name']
+        
+        # Set service account if provided in config
+        if 'service_account' in config['project']:
+            google_cloud_options.service_account_email = config['project']['service_account']
+            print(f"✅ Using service account: {config['project']['service_account']}")
 
     with beam.Pipeline(options=options) as p:
         # Use BigQuery project for table references and queries
