@@ -60,38 +60,18 @@ ner_model_configuration:
     - MONEY
     - ORG
 
-# Global deny list - words to never redact as PII
-# These common words are often false positives from NER
+# ============================================================================
+# DENY LIST - Comprehensive false positive prevention
+# ============================================================================
+# This single list serves two purposes:
+#   1. EXACT MATCH: Never redact if detected text exactly matches these words
+#   2. VALIDATION: For PERSON entities, validate using conversational ratio
+#
+# Words are grouped logically for maintainability
+# ============================================================================
+
 deny_list:
-  - "THANK"
-  - "THANKS"
-  - "HELLO"
-  - "HI"
-  - "PLEASE"
-  - "YES"
-  - "NO"
-  - "YEAH"
-  - "YEP"
-  - "OKAY"
-  - "OK"
-  - "HOW"
-  - "WHAT"
-  - "WHERE"
-  - "WHEN"
-  - "WHY"
-  - "WHO"
-  - "CAN"
-  - "COULD"
-  - "WOULD"
-  - "SHOULD"
-  - "YOU"
-  - "YOUR"
-  - "YOU'RE"
-  - "YOURE"
-  - "YOU'LL"
-  - "YOULL"
-  - "YOU'VE"
-  - "YOUVE"
+  # === Pronouns & Possessives ===
   - "I"
   - "I'M"
   - "IM"
@@ -101,10 +81,20 @@ deny_list:
   - "ILL"
   - "MY"
   - "ME"
-  - "THE"
-  - "AND"
-  - "FOR"
-  - "BUT"
+  - "YOU"
+  - "YOUR"
+  - "YOU'RE"
+  - "YOURE"
+  - "YOU'LL"
+  - "YOULL"
+  - "YOU'VE"
+  - "YOUVE"
+  - "HE"
+  - "HE'S"
+  - "HES"
+  - "SHE"
+  - "SHE'S"
+  - "SHES"
   - "WE"
   - "WE'RE"
   - "WERE"
@@ -120,16 +110,160 @@ deny_list:
   - "IT"
   - "IT'S"
   - "ITS"
-  - "HE"
-  - "HE'S"
-  - "HES"
-  - "SHE"
-  - "SHE'S"
-  - "SHES"
   - "US"
-  - "SKY"
-  - "BUSINESS"
+  
+  # === Common Articles & Conjunctions ===
+  - "THE"
+  - "A"
+  - "AN"
+  - "AND"
+  - "BUT"
+  - "OR"
+  - "FOR"
+  - "NOR"
+  - "SO"
+  - "YET"
+  - "AS"
+  - "IF"
+  - "THEN"
+  
+  # === Prepositions ===
+  - "TO"
+  - "OF"
+  - "IN"
+  - "ON"
+  - "AT"
+  - "BY"
+  - "WITH"
+  - "FROM"
+  - "ABOUT"
+  
+  # === Common Verbs ===
+  - "IS"
+  - "ARE"
+  - "WAS"
+  - "WERE"
+  - "BE"
+  - "BEEN"
+  - "BEING"
+  - "AM"
+  - "HAVE"
+  - "HAS"
+  - "HAD"
+  - "DO"
+  - "DOES"
+  - "DID"
+  - "CAN"
+  - "CAN'T"
+  - "CANT"
+  - "COULD"
+  - "WOULD"
+  - "SHOULD"
+  - "WILL"
+  - "MUST"
+  - "MAY"
+  - "MIGHT"
+  - "GET"
+  - "GOT"
+  - "GIVE"
+  - "GAVE"
+  - "TAKE"
+  - "NEED"
+  - "WANT"
+  
+  # === Yes/No & Affirmatives ===
+  - "YES"
+  - "NO"
+  - "YEAH"
+  - "YEP"
+  - "OKAY"
+  - "OK"
+  - "SURE"
+  
+  # === Polite/Social Words ===
+  - "PLEASE"
+  - "THANK"
+  - "THANKS"
+  - "SORRY"
+  - "HELLO"
+  - "HI"
+  - "GOODBYE"
+  - "BYE"
+  
+  # === Question Words ===
+  - "WHAT"
+  - "WHERE"
+  - "WHEN"
+  - "WHO"
+  - "WHY"
+  - "HOW"
+  - "WHICH"
+  
+  # === Location/Direction Words ===
   - "HERE"
   - "THERE"
+  - "THIS"
+  - "THAT"
+  - "THESE"
+  - "THOSE"
   - "NOW"
-  - "THEN"
+  
+  # === Common Adjectives/Adverbs ===
+  - "NEW"
+  - "ONE"
+  - "JUST"
+  - "WELL"
+  - "BACK"
+  - "ELSE"
+  
+  # === Conversational/Filler Words ===
+  - "UH"
+  - "UM"
+  - "GOODNESS"
+  - "SAKE"
+  - "WAIT"
+  - "LISTEN"
+  - "LOOK"
+  
+  # === Communication Verbs ===
+  - "CALL"
+  - "RING"
+  - "SPEAK"
+  - "TALK"
+  - "TELL"
+  - "SAY"
+  - "SAID"
+  - "HEAR"
+  - "HEARD"
+  - "ASK"
+  - "ASKED"
+  
+  # === Service/Business Words ===
+  - "HELP"
+  - "ACCEPT"
+  - "KNOW"
+  - "TOLD"
+  - "ENGINEER"
+  - "SKY"
+  - "BUSINESS"
+  - "SERVICE"
+  - "CUSTOMER"
+  
+  # === Password Context (for password recognizer) ===
+  - "PASSWORD"
+  - "WRITTEN"
+  - "DOWN"
+  - "SOMEWHERE"
+  - "CHECK"
+  - "LET"
+
+# ============================================================================
+# VALIDATION SETTINGS
+# ============================================================================
+validation:
+  person_entity:
+    # For PERSON entities from SpacyRecognizer (not in stateful context):
+    # Calculate ratio of conversational words in detected text
+    # Reject if ratio exceeds this threshold
+    max_conversational_ratio: 0.5  # 50% - tune this based on false positives
+    enabled: true

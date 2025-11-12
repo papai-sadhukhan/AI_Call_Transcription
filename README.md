@@ -98,6 +98,121 @@ python main.py --config_path config_prod.json --runner DirectRunner
 ### `README.md`
 - **Purpose**: This documentation file
 
+## PII Detection Logic
+
+### Detection Strategy: **Context-Based (Stateful)**
+All recognizers use conversation context from previous turn → more accurate, fewer false positives
+
+### Entity Detection Methods
+
+#### **1. REFERENCE_NUMBER**
+**Analyzer:** `StatefulReferenceNumberRecognizer` (Custom)
+```
+Context: prev turn mentions "REFERENCE NUMBER", "REF NUMBER" 
+→ Check: response has 8+ consecutive number words/digits
+→ Redact: the number sequence
+Example: "ONE NINE ONE TWO ONE TWO EIGHT" → [REDACTED REFERENCE]
+```
+
+#### **2. BANK_DIGITS** (Last 4 digits)
+**Analyzer:** `StatefulBankDigitsRecognizer` (Custom)
+```
+Context: prev turn mentions "LAST FOUR DIGIT", "FINAL 4 DIGIT"
+→ Check: response has 4 number words/digits
+→ Redact: the 4 numbers
+Example: "FIVE SIX SEVEN EIGHT" → [REDACTED ACCOUNT]
+```
+
+#### **3. CARD_DIGITS** (Last 4 digits)
+**Analyzer:** `StatefulCardDigitsRecognizer` (Custom)
+```
+Context: prev turn mentions "CARD NUMBER", "LAST 4 DIGIT"
+→ Check: response has 4 number words/digits
+→ Redact: the 4 numbers
+Example: "ONE TWO THREE FOUR" → [REDACTED CARD]
+```
+
+#### **4. PERSON (Name)**
+**Analyzers:** `StatefulNameRecognizer` (Custom) + `SpacyRecognizer` (Default NER)
+```
+Context: prev turn mentions "NAME", "CALLED", "SURNAME"
+→ Pattern 1: Spelled letters (3+): "G R A C E" → [REDACTED NAME]
+→ Pattern 2: Spelled in text: "MY NAME IS J O H N" → redact "J O H N"
+→ Pattern 3: After "NAME IS": "NAME IS ROSEMARY" → redact "ROSEMARY"
+→ Pattern 4: Short direct response (1-3 words, ≤1 conversational word): "JOHN SMITH" → [REDACTED NAME]
+→ SpaCy NER: Detects names in natural language → filtered by deny_list validation
+→ Validation: Filter conversational phrases (deny_list from YAML)
+```
+
+#### **5. ADDRESS**
+**Analyzer:** `StatefulAddressRecognizer` (Custom)
+```
+Context: prev turn mentions "ADDRESS", "STREET", "FLAT"
+→ Pattern 1: Numeric address: "2 MILTON DRIVE" → [REDACTED ADDRESS]
+→ Pattern 2: Contains street indicators: "ROAD", "AVENUE", "LANE" → redact full response
+→ Fallback: Short response (≤15 words) with letters+numbers → [REDACTED ADDRESS]
+```
+
+#### **6. UK_POSTCODE**
+**Analyzer:** `StatefulPostcodeRecognizer` (Custom)
+```
+Context: prev turn mentions "POSTCODE", "POST CODE"
+→ Check: response has single letters (1-2 chars) AND number words/digits
+→ Redact: entire response
+Example: "ER SEVEN SIX Q T" → [REDACTED POSTCODE]
+Logic: letters=[ER,Q,T] + numbers=[SEVEN,SIX] → postcode detected
+```
+
+#### **7. EMAIL_ADDRESS**
+**Analyzer:** `StatefulEmailRecognizer` (Custom)
+```
+Context: prev turn mentions "EMAIL", "E MAIL"
+→ Pattern 1: Standard format: "USER@DOMAIN.COM" → [REDACTED EMAIL]
+→ Pattern 2: Spoken format: "JOHN AT EXAMPLE DOT COM" → [REDACTED EMAIL]
+→ Pattern 3: Spelled: "J O H N AT EXAMPLE" → [REDACTED EMAIL]
+```
+
+#### **8. PASSWORD**
+**Analyzer:** `StatefulPasswordRecognizer` (Custom)
+```
+Context: prev turn mentions "PASSWORD", "PASSCODE", "PIN"
+→ Strategy: Find consecutive sequence of (single letters OR number words OR digits)
+→ Filter: Exclude conversational words (THE, IS, WITH, GOT, etc.)
+→ Threshold: Minimum 6 elements
+→ Redact: Only the password sequence (preserve conversational prefix/suffix)
+Example: "IT IS WRITTEN DOWN HERE SOMEWHERE THREE THREE TWO C D C Q I J SEVEN SIX EIGHT E"
+         → "IT IS WRITTEN DOWN HERE SOMEWHERE [REDACTED PASSWORD]"
+```
+
+### False Positive Prevention
+
+**Deny List (redactConfig.yaml):**
+- 158 conversational words organized by category
+- Dual purpose:
+  1. **Exact match filter**: Never redact if text exactly matches deny_list word
+  2. **Validation filter**: For PERSON entities, reject if >50% words are conversational
+
+**Example:**
+```
+"YOU'RE CAN'T" detected as PERSON by SpaCy NER
+→ Check: 100% conversational words (both in deny_list)
+→ Action: Filtered out (not redacted)
+```
+
+### Configuration Files
+
+**redactConfig.yaml:**
+- NLP engine settings (spaCy model: en_core_web_lg)
+- Entity mappings (spaCy NER → Presidio entities)
+- Deny list (158 words in 10+ categories)
+- Validation thresholds
+
+**config_dev.json / config_prod.json:**
+- BigQuery project/dataset/table settings
+- PII entity replacement values: `[REDACTED NAME]`, `[REDACTED POSTCODE]`, etc.
+- Context indicators: keywords that trigger each entity type detection
+- Processing limits and batch sizes
+
 ## Configuration
 
 All settings are now managed through `config.json`:

@@ -340,33 +340,62 @@ class StatefulNameRecognizer(EntityRecognizer):
         
         words = text_upper.split()
         
+        # Get conversational words from context_indicators (loaded from deny_list in YAML)
+        # These are words that typically indicate the text is NOT a name
+        conversational_words_list = self.context_indicators.get('conversational_words', [])
+        conversational_words = set(conversational_words_list) if conversational_words_list else set([
+            'THE', 'IS', 'IT', 'WITH', 'YOU', 'YOUR', "YOU'RE", 'I', 'A', 'AN', 'TO', 'OF'
+        ])
+        
         # Check if response is primarily single letters (spelled-out name like "G R A C E")
         # or contains word(s) followed by spelled letters
         single_letters = [w for w in words if len(w) == 1 and w.isalpha()]
         
+        # Filter out single letters that are common words (I, A)
+        meaningful_single_letters = [w for w in single_letters if w not in conversational_words]
+        
         # Pattern 1: Response with spelled-out name (e.g., "GREY G R A C E" or just "G R A C E")
-        # If we have 3+ single letters in response, likely entire response is the name
-        if len(single_letters) >= 3:
-            # Redact entire response as it's the name being spelled out
-            results.append(RecognizerResult(
-                entity_type="PERSON",
-                start=0,
-                end=len(text),
-                score=0.95,
-                analysis_explanation=AnalysisExplanation(
-                    recognizer=self.__class__.__name__,
-                    pattern_name="spelled_name_full_response",
-                    pattern="context_based_full_redaction",
-                    original_score=0.95
-                )
-            ))
-            return results
+        # If we have 3+ meaningful single letters AND they're consecutive, likely entire response is the name
+        if len(meaningful_single_letters) >= 3:
+            # Check if single letters form a consecutive sequence
+            single_letter_indices = [i for i, w in enumerate(words) if len(w) == 1 and w.isalpha() and w not in conversational_words]
+            
+            # Check for consecutive sequence (allowing up to 2 word gaps for names like "GREY G R A C E")
+            if len(single_letter_indices) >= 3:
+                is_consecutive = True
+                max_gap = 2
+                for i in range(len(single_letter_indices) - 1):
+                    if single_letter_indices[i+1] - single_letter_indices[i] > max_gap:
+                        is_consecutive = False
+                        break
+                
+                if is_consecutive:
+                    # Redact entire response as it's the name being spelled out
+                    results.append(RecognizerResult(
+                        entity_type="PERSON",
+                        start=0,
+                        end=len(text),
+                        score=0.95,
+                        analysis_explanation=AnalysisExplanation(
+                            recognizer=self.__class__.__name__,
+                            pattern_name="spelled_name_full_response",
+                            pattern="context_based_full_redaction",
+                            original_score=0.95
+                        )
+                    ))
+                    return results
         
         # Pattern 2: Spelled-out names within text (e.g., "MY NAME IS J O H N SMITH")
+        # Look for sequences of 3+ single letters separated by spaces
         spelled_pattern = r'\b([A-Z]\s+){2,}[A-Z]\b'
         for match in re.finditer(spelled_pattern, text_upper):
-            spelled_text = match.group().replace(' ', '')
-            if len(spelled_text) >= 3:
+            matched_text = match.group()
+            spelled_letters = [w for w in matched_text.split() if len(w) == 1]
+            
+            # Check if letters are not conversational words
+            non_conversational = [l for l in spelled_letters if l not in conversational_words]
+            
+            if len(non_conversational) >= 3:
                 results.append(RecognizerResult(
                     entity_type="PERSON",
                     start=match.start(),
@@ -409,23 +438,32 @@ class StatefulNameRecognizer(EntityRecognizer):
         
         # Pattern 4: If short response with all caps words (likely a name as direct answer)
         # e.g., "JOHN SMITH" or "SMITH" as a direct response
+        # BUT exclude responses with many conversational words
         if not results and len(words) <= 3 and len(words) >= 1:
             # Check if all words are capitalized and at least 3 chars
             all_caps_words = [w for w in words if w.isalpha() and len(w) >= 3]
-            if len(all_caps_words) == len(words):
-                # Likely a name given as direct answer
-                results.append(RecognizerResult(
-                    entity_type="PERSON",
-                    start=0,
-                    end=len(text),
-                    score=0.88,
-                    analysis_explanation=AnalysisExplanation(
-                        recognizer=self.__class__.__name__,
-                        pattern_name="direct_name_response",
-                        pattern="context_based_full_redaction",
-                        original_score=0.88
-                    )
-                ))
+            conversational_count = sum(1 for w in words if w in conversational_words)
+            
+            # Only match if:
+            # 1. All words are alphabetic and 3+ chars
+            # 2. No more than 1 conversational word (allows for "YES JOHN" but not "YOU'RE CAN'T")
+            if len(all_caps_words) == len(words) and conversational_count <= 1:
+                # Additional check: at least one word should look like a proper name (capitalized, uncommon)
+                potential_names = [w for w in words if w not in conversational_words and len(w) >= 3]
+                if len(potential_names) >= 1:
+                    # Likely a name given as direct answer
+                    results.append(RecognizerResult(
+                        entity_type="PERSON",
+                        start=0,
+                        end=len(text),
+                        score=0.88,
+                        analysis_explanation=AnalysisExplanation(
+                            recognizer=self.__class__.__name__,
+                            pattern_name="direct_name_response",
+                            pattern="context_based_full_redaction",
+                            original_score=0.88
+                        )
+                    ))
         
         return results
 
@@ -531,103 +569,54 @@ class StatefulPostcodeRecognizer(EntityRecognizer):
         )
     
     def analyze(self, text, entities, nlp_artifacts):
-        """Detect postcodes when context mentions postcode."""
+        """
+        Simplified postcode detection logic:
+        1. Check if postcode was mentioned in previous turn
+        2. If yes, check if response contains single letters AND (number words OR digits)
+        3. If yes, redact the entire response as postcode
+        
+        Example: "ER SEVEN SIX Q T" has letters (ER, Q, T) and numbers (SEVEN, SIX) -> redact
+        """
         results = []
         text_upper = text.upper()
+        words = text_upper.split()
         
-        # Check if postcode context is present from PREVIOUS turn OR current turn mentions it
-        expecting_postcode_from_previous = self.context_tracker.expecting_postcode
-        current_turn_mentions_postcode = (
-            "POSTCODE" in text_upper or 
-            "POST CODE" in text_upper or 
-            "POSTAL CODE" in text_upper
-        )
-        
-        # Only detect if postcode context is present (from either previous or current turn)
-        if not (expecting_postcode_from_previous or current_turn_mentions_postcode):
+        # Step 1: Check if postcode context exists from PREVIOUS turn
+        # Only detect when agent explicitly asked for postcode in previous turn
+        if not self.context_tracker.expecting_postcode:
             return results
         
-        # Pattern 1: Spelled-out postcode with letters and numbers
-        # Examples: "ONE THREE NINE H H", "A B I ONE THREE NINE H S FOR SUGAR"
-        # Look for: letter(s) + number(s) + letter(s) pattern (typical UK postcode)
+        # Step 2: Check if response contains actual letter components (single letters or short letter sequences)
+        # UK postcodes have letter parts like: ER, E, AB, Q, T, CD, etc.
+        # Look for words that are 1-2 letters long (not number words)
+        number_words = {'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'ZERO', 
+                       'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 
+                       'SEVENTEEN', 'EIGHTEEN', 'NINETEEN', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY',
+                       'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY', 'HUNDRED'}
         
-        # Strategy 1: Try to find postcode after "POST CODE" or "POSTCODE" keywords
-        postcode_keywords = [r'POST\s*CODE\s+(?:IS\s+|WILL\s+HAVE\s+|YOU\s+WILL\s+HAVE\s+)?(.{10,50}?)(?:\s+FOR\s+|\s+AND\s+|$)',
-                            r'POSTCODE\s+(?:IS\s+|WILL\s+HAVE\s+|YOU\s+WILL\s+HAVE\s+)?(.{10,50}?)(?:\s+FOR\s+|\s+AND\s+|$)']
+        # Find letter components (1-2 letter words that aren't number words)
+        letter_components = [w for w in words if w.isalpha() and len(w) <= 2 and w not in number_words]
+        has_letters = len(letter_components) > 0
         
-        for keyword_pattern in postcode_keywords:
-            for match in re.finditer(keyword_pattern, text_upper):
-                postcode_candidate = match.group(1).strip()
-                
-                # Check if candidate has letter + number + letter pattern (UK postcode structure)
-                has_letters = bool(re.search(r'[A-Z]', postcode_candidate))
-                has_numbers = bool(re.search(r'(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|ZERO|\d)', postcode_candidate))
-                
-                if has_letters and has_numbers:
-                    # Calculate actual position in original text
-                    postcode_start = match.start(1)
-                    postcode_end = match.end(1)
-                    
-                    results.append(RecognizerResult(
-                        entity_type="UK_POSTCODE",
-                        start=postcode_start,
-                        end=postcode_end,
-                        score=0.95,
-                        analysis_explanation=AnalysisExplanation(
-                            recognizer=self.__class__.__name__,
-                            pattern_name="postcode_after_keyword",
-                            pattern=keyword_pattern,
-                            original_score=0.95
-                        )
-                    ))
+        # Step 3: Check if response contains numbers (spoken number words OR digits)
+        has_number_words = any(w in number_words for w in words)
+        has_digits = bool(re.search(r'\d', text_upper))
+        has_numbers = has_number_words or has_digits
         
-        # Strategy 2: General pattern for spelled-out postcodes
-        # More flexible pattern to match various UK postcode formats when spelled out
-        # Can have 1-4 letters, then 1-4 number words/digits, then 1-3 letters
-        # Match sequences like: "A B I ONE THREE NINE H S" or "ONE THREE NINE H H"
-        if not results:  # Only if keyword-based search didn't find anything
-            postcode_pattern = r'\b(?:[A-Z]\s+){1,4}(?:ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|ZERO|\d+\s+){1,4}(?:[A-Z]\s*){1,3}\b'
-            
-            for match in re.finditer(postcode_pattern, text_upper):
-                matched_text = match.group()
-                # Check if it contains both letters and numbers/number words
-                has_letters = bool(re.search(r'[A-Z]', matched_text))
-                has_numbers = bool(re.search(r'(ONE|TWO|THREE|FOUR|FIVE|SIX|SEVEN|EIGHT|NINE|ZERO|\d)', matched_text))
-                
-                if has_letters and has_numbers:
-                    results.append(RecognizerResult(
-                        entity_type="UK_POSTCODE",
-                        start=match.start(),
-                        end=match.end(),
-                        score=0.95,
-                        analysis_explanation=AnalysisExplanation(
-                            recognizer=self.__class__.__name__,
-                            pattern_name="spelled_postcode",
-                            pattern=postcode_pattern,
-                            original_score=0.95
-                        )
-                    ))
-        
-        # Pattern 2: Mixed letters and numbers in short response
-        # For responses with alphanumeric postcodes (e.g., spoken postcodes)
-        if not results:  # Only if we haven't found spelled-out postcodes
-            has_letters = bool(re.search(r'[A-Z]', text_upper))
-            has_numbers = bool(re.search(r'\d', text_upper))
-            
-            if has_letters and has_numbers and len(text.split()) <= 15:
-                # Redact entire response as it's likely a postcode
-                results.append(RecognizerResult(
-                    entity_type="UK_POSTCODE",
-                    start=0,
-                    end=len(text),
-                    score=0.85,
-                    analysis_explanation=AnalysisExplanation(
-                        recognizer=self.__class__.__name__,
-                        pattern_name="postcode_full_response",
-                        pattern="context_based",
-                        original_score=0.85
-                    )
-                ))
+        # Step 4: If response has both letter components and numbers, treat entire response as postcode
+        if has_letters and has_numbers:
+            results.append(RecognizerResult(
+                entity_type="UK_POSTCODE",
+                start=0,
+                end=len(text),
+                score=0.95,
+                analysis_explanation=AnalysisExplanation(
+                    recognizer=self.__class__.__name__,
+                    pattern_name="postcode_context_based",
+                    pattern="letters_and_numbers_after_postcode_request",
+                    original_score=0.95
+                )
+            ))
         
         return results
 
@@ -704,45 +693,115 @@ class StatefulPasswordRecognizer(EntityRecognizer):
         if not self.context_tracker.expecting_password:
             return results
         
-        # Strategy: Check if response contains alphanumeric password pattern
-        # Look for sequences with both letters and numbers/number words
         words = text_upper.split()
         
-        # Check if text contains both letters and numbers/number words
-        has_letters = bool(re.search(r'\b[A-Z]\b', text_upper))
-        has_numbers = bool(re.search(r'\b(?:' + '|'.join(self.context_indicators.get('number_words', [
-            'ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE'
-        ])) + r'|\d+)\b', text_upper))
+        # Get number words from config
+        number_words = set(self.context_indicators.get('number_words', [
+            'ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
+            'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 
+            'SEVENTEEN', 'EIGHTEEN', 'NINETEEN', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY',
+            'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY', 'HUNDRED'
+        ]))
         
-        # If the response contains alphanumeric content (letters + numbers), redact entire response
-        # This handles cases like "THREE THREE TWO C D C Q I J SEVEN SIX EIGHT E"
-        if has_letters and has_numbers and len(words) >= 4:
-            # Redact the entire response as it's likely a password
+        # Get conversational words from config (loaded from deny_list in YAML)
+        # These words are already included in deny_list: WRITTEN, DOWN, SOMEWHERE, PASSWORD, LET, CHECK
+        conversational_words_list = self.context_indicators.get('conversational_words', [])
+        conversational_words = set(conversational_words_list) if conversational_words_list else set([
+            'THE', 'IS', 'IT', 'WITH', 'PASSWORD', 'WRITTEN', 'DOWN', 'SOMEWHERE'
+        ])
+        
+        # Strategy: Find continuous sequences of single letters, number words, or digits
+        # that don't include conversational words
+        
+        password_start_idx = -1
+        password_end_idx = -1
+        consecutive_count = 0
+        
+        for i, word in enumerate(words):
+            # Check if word is a password component
+            is_single_letter = (len(word) == 1 and word.isalpha())
+            is_number_word = (word in number_words)
+            is_digit = word.isdigit()
+            is_conversational = (word in conversational_words)
+            
+            # If it's a password component and not a conversational word
+            if (is_single_letter or is_number_word or is_digit) and not is_conversational:
+                if password_start_idx == -1:
+                    password_start_idx = i
+                password_end_idx = i
+                consecutive_count += 1
+            else:
+                # If we hit a conversational word and have accumulated password elements
+                # Check if we should end the password sequence
+                if consecutive_count >= 6:  # Minimum 6 elements for a password
+                    break
+                elif consecutive_count > 0 and consecutive_count < 6:
+                    # Reset if we don't have enough elements yet
+                    password_start_idx = -1
+                    password_end_idx = -1
+                    consecutive_count = 0
+        
+        # If we found a password sequence with at least 6 elements
+        if consecutive_count >= 6 and password_start_idx != -1:
+            # Calculate character positions in original text
+            # Find the start position of the first password word
+            text_position = 0
+            for i, word in enumerate(words):
+                if i == password_start_idx:
+                    start_pos = text_position
+                    break
+                text_position += len(word) + 1  # +1 for space
+            
+            # Find the end position of the last password word
+            text_position = 0
+            for i, word in enumerate(words):
+                text_position += len(word)
+                if i == password_end_idx:
+                    end_pos = text_position
+                    break
+                text_position += 1  # space
+            
+            # Find actual positions in original text (case-insensitive)
+            # We need to map back to the original text preserving case
+            start_char = len(' '.join(words[:password_start_idx]))
+            if password_start_idx > 0:
+                start_char += 1  # Add space before
+            
+            end_char = len(' '.join(words[:password_end_idx + 1]))
+            
             results.append(RecognizerResult(
                 entity_type="PASSWORD",
-                start=0,
-                end=len(text),
+                start=start_char,
+                end=end_char,
                 score=0.95,
                 analysis_explanation=AnalysisExplanation(
                     recognizer=self.__class__.__name__,
-                    pattern_name="alphanumeric_password_full_response",
-                    pattern="context_based_full_redaction",
+                    pattern_name="password_sequence_detection",
+                    pattern="hybrid_context_pattern",
                     original_score=0.95
                 )
             ))
-        elif has_letters and len(words) >= 6:
-            # If just letters but long sequence, likely a password too
-            results.append(RecognizerResult(
-                entity_type="PASSWORD",
-                start=0,
-                end=len(text),
-                score=0.90,
-                analysis_explanation=AnalysisExplanation(
-                    recognizer=self.__class__.__name__,
-                    pattern_name="letter_password_full_response",
-                    pattern="context_based_full_redaction",
-                    original_score=0.90
-                )
-            ))
+        
+        # Fallback: If no specific sequence found but response is short and has alphanumeric
+        # (direct password response with no prefix)
+        elif not results and len(words) <= 15:
+            has_letters = any(len(w) == 1 and w.isalpha() for w in words)
+            has_numbers = any(w in number_words or w.isdigit() for w in words)
+            non_conversational = sum(1 for w in words if w not in conversational_words)
+            
+            # If most words are password-like (not conversational) and has alphanumeric mix
+            if has_letters and has_numbers and non_conversational >= len(words) * 0.6:
+                results.append(RecognizerResult(
+                    entity_type="PASSWORD",
+                    start=0,
+                    end=len(text),
+                    score=0.90,
+                    analysis_explanation=AnalysisExplanation(
+                        recognizer=self.__class__.__name__,
+                        pattern_name="short_password_response",
+                        pattern="context_based_full_redaction",
+                        original_score=0.90
+                    )
+                ))
         
         return results

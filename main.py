@@ -84,16 +84,30 @@ class EntityRecognizerPIITransform(beam.DoFn):
         self.analyzer = AnalyzerEngine(nlp_engine=provider.create_engine())
         self.anonymizer = AnonymizerEngine()
         
-        # Load deny_list from YAML for post-processing filter
-        self.deny_list = self._load_deny_list(config_path)
+        # Load deny_list and validation config from YAML
+        # Single unified list serves both exact match filtering AND conversational validation
+        deny_list_data = self._load_deny_list_config(config_path)
+        self.deny_list = deny_list_data['deny_list']
+        self.person_validation_config = deny_list_data['validation']
         
-        # Get context indicators from config
+        # deny_list serves dual purpose:
+        # 1. Exact match: if detected text exactly matches a word in deny_list, skip it
+        # 2. Conversational validation: use words to calculate ratio for PERSON entity validation
+        self.conversational_words = self.deny_list  # Same list, dual purpose
+        
+        # Get context indicators from JSON config
         context_indicators = self.config.get('context_indicators', {})
+        
+        # Add conversational_words to context_indicators so custom recognizers can use them
+        context_indicators['conversational_words'] = list(self.conversational_words)
         
         # Initialize conversation context tracker with config
         self.context_tracker = ConversationContextTracker(context_indicators)
 
-        # Register ONLY stateful EntityRecognizers (all use context_tracker and context_indicators)
+        # Keep default recognizers for broad coverage, but we'll filter results in post-processing
+        # This way we catch names that don't match our patterns, but still prevent false positives
+
+        # Register stateful EntityRecognizers (all use context_tracker and context_indicators)
         try:
             self.analyzer.registry.add_recognizer(StatefulReferenceNumberRecognizer(self.context_tracker, context_indicators))
             self.analyzer.registry.add_recognizer(StatefulBankDigitsRecognizer(self.context_tracker, context_indicators))
@@ -103,22 +117,76 @@ class EntityRecognizerPIITransform(beam.DoFn):
             self.analyzer.registry.add_recognizer(StatefulPostcodeRecognizer(self.context_tracker, context_indicators))
             self.analyzer.registry.add_recognizer(StatefulEmailRecognizer(self.context_tracker, context_indicators))
             self.analyzer.registry.add_recognizer(StatefulPasswordRecognizer(self.context_tracker, context_indicators))
-            logging.info("✅ Stateful EntityRecognizers registered (using context_tracker and context_indicators from config)")
+            logging.info("Stateful EntityRecognizers registered (using context_tracker and context_indicators from config)")
         except Exception as e:
             logging.warning("Could not register recognizer: %s", e)
 
-    def _load_deny_list(self, config_path):
-        """Load deny_list from YAML configuration file for post-processing filter."""
+    def _load_deny_list_config(self, config_path):
+        """
+        Load deny_list and validation config from YAML.
+        
+        Returns a dict with:
+          - deny_list: Set of uppercase words for exact matching and validation
+          - validation: Dict with person_entity validation settings
+        """
         import yaml
         try:
             with open(config_path, 'r') as f:
                 config = yaml.safe_load(f)
                 deny_list = config.get('deny_list', [])
-                # Convert to uppercase for case-insensitive matching
-                return [word.upper() for word in deny_list]
+                # Convert to uppercase set for fast lookup and case-insensitive matching
+                deny_list_set = set(word.upper() for word in deny_list)
+                
+                # Load validation settings
+                validation = config.get('validation', {})
+                person_validation = validation.get('person_entity', {
+                    'enabled': True,
+                    'max_conversational_ratio': 0.5
+                })
+                
+                return {
+                    'deny_list': deny_list_set,
+                    'validation': person_validation
+                }
         except Exception as e:
-            logging.warning(f"Could not load deny_list from YAML: {e}")
-            return []
+            logging.warning(f"Could not load deny_list config from YAML: {e}")
+            return {
+                'deny_list': set(),
+                'validation': {'enabled': True, 'max_conversational_ratio': 0.5}
+            }
+    
+    def _is_likely_false_positive(self, text_upper):
+        """
+        Validate if a PERSON detection from SpacyRecognizer is likely a false positive.
+        Returns True if the text is primarily conversational words and should be rejected.
+        
+        This provides a safety net against NER model false positives while still allowing
+        real names to be detected when they occur outside of expected contexts.
+        
+        Uses conversational_words from config for maintainability.
+        """
+        # Check if validation is enabled
+        if not self.person_validation_config.get('enabled', True):
+            return False  # Validation disabled, accept all detections
+        
+        words = text_upper.split()
+        max_ratio = self.person_validation_config.get('max_conversational_ratio', 0.5)
+        
+        # If only 1-2 words, check if ALL words are conversational
+        if len(words) <= 2:
+            conversational_count = sum(1 for w in words if w in self.conversational_words)
+            # All words are conversational = likely false positive
+            return conversational_count == len(words)
+        
+        # For longer text (3+ words), check the ratio
+        conversational_count = sum(1 for w in words if w in self.conversational_words)
+        conversational_ratio = conversational_count / len(words)
+        
+        # If ratio exceeds threshold, likely not a real name
+        # Example with default 0.5 threshold:
+        #   "YOU'RE CAN'T" (100% conversational) -> rejected
+        #   "JOHN SMITH PLEASE" (33% conversational) -> accepted
+        return conversational_ratio > max_ratio
 
 
     def process(self, element):
@@ -140,7 +208,7 @@ class EntityRecognizerPIITransform(beam.DoFn):
                 analyzer_result = self.analyzer.analyze(text=content, language="en")
                 
                 # Filter results by score AND deny_list
-                # Remove false positives using deny_list from YAML
+                # Remove false positives using deny_list from YAML and intelligent validation
                 filtered_results = []
                 for r in analyzer_result:
                     matched_text = content[r.start:r.end].upper()
@@ -150,8 +218,28 @@ class EntityRecognizerPIITransform(beam.DoFn):
                         continue
                     
                     # Skip if score is too low
-                    if r.score > 0.7:
-                        filtered_results.append(r)
+                    if r.score <= 0.7:
+                        continue
+                    
+                    # SMART FILTER: For PERSON entities, validate them when NOT expecting a name
+                    # This catches false positives from default recognizers (SpacyRecognizer, etc.)
+                    # If we ARE expecting a name, trust all recognizers (custom + default)
+                    if r.entity_type == "PERSON" and not self.context_tracker.expecting_name:
+                        # Check if detection is from our custom recognizer (has analysis_explanation with recognizer attribute)
+                        is_custom_recognizer = False
+                        if r.analysis_explanation and hasattr(r.analysis_explanation, 'recognizer'):
+                            recognizer_name = r.analysis_explanation.recognizer
+                            # Our custom recognizers have "Stateful" in the name
+                            is_custom_recognizer = "Stateful" in recognizer_name
+                        
+                        # Only validate default recognizer detections (not our custom ones)
+                        if not is_custom_recognizer:
+                            # Check if the matched text is mostly conversational words
+                            if self._is_likely_false_positive(matched_text):
+                                logging.debug(f"Filtered false positive PERSON: '{matched_text}' (conversational ratio too high)")
+                                continue  # Skip this false positive
+                    
+                    filtered_results.append(r)
                 
                 # Log matched entities for audit trail
                 for result in filtered_results:
@@ -211,11 +299,11 @@ def run(argv=None):
     # Add worker service account if specified in config
     if 'worker_service_account' in config.get('project', {}):
         pipeline_args.append(f'--service_account_email={config["project"]["worker_service_account"]}')
-        print(f"✅ Using worker service account: {config['project']['worker_service_account']}")
+        print(f"Using worker service account: {config['project']['worker_service_account']}")
 
     options = PipelineOptions(pipeline_args)
 
-    print(f"🔄 Running STATEFUL ENTITY RECOGNIZER approach with config: {args.config_path}")
+    print(f"Running STATEFUL ENTITY RECOGNIZER approach with config: {args.config_path}")
     # Set Dataflow job project
     if not options.get_all_options().get('runner') or options.get_all_options().get('runner') == 'DataflowRunner':
         options.view_as(StandardOptions).runner = 'DataflowRunner'
@@ -228,7 +316,7 @@ def run(argv=None):
         # Set service account if provided in config
         if 'service_account' in config['project']:
             google_cloud_options.service_account_email = config['project']['service_account']
-            print(f"✅ Using service account: {config['project']['service_account']}")
+            print(f"Using service account: {config['project']['service_account']}")
 
     with beam.Pipeline(options=options) as p:
         # Use BigQuery project for table references and queries
@@ -293,7 +381,7 @@ def run(argv=None):
         # Count records processed
         record_count = result | "Count Records" >> beam.combiners.Count.Globally()
         def print_count(count):
-            print(f"✅ {count} records inserted into BigQuery.")
+            print(f"{count} records inserted into BigQuery.")
         record_count | "Print Count" >> beam.Map(print_count)
 
         write_method = config['dataflow'].get('write_method', 'STREAMING_INSERTS')
