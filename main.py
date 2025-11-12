@@ -26,7 +26,8 @@ from utils.entity_recognizers import (
     StatefulAddressRecognizer,
     StatefulPostcodeRecognizer,
     StatefulEmailRecognizer,
-    StatefulPasswordRecognizer
+    StatefulPasswordRecognizer,
+    StatefulPhoneNumberRecognizer
 )
 
 
@@ -84,11 +85,12 @@ class EntityRecognizerPIITransform(beam.DoFn):
         self.analyzer = AnalyzerEngine(nlp_engine=provider.create_engine())
         self.anonymizer = AnonymizerEngine()
         
-        # Load deny_list and validation config from YAML
-        # Single unified list serves both exact match filtering AND conversational validation
-        deny_list_data = self._load_deny_list_config(config_path)
-        self.deny_list = deny_list_data['deny_list']
-        self.person_validation_config = deny_list_data['validation']
+        # Load deny_list, validation config, detection scores, and number_words from YAML
+        # Single unified configuration for all recognizers
+        yaml_config = self._load_deny_list_config(config_path)
+        self.deny_list = yaml_config['deny_list']
+        self.person_validation_config = yaml_config['validation']
+        self.detection_scores = yaml_config['detection_scores']
         
         # deny_list serves dual purpose:
         # 1. Exact match: if detected text exactly matches a word in deny_list, skip it
@@ -98,8 +100,10 @@ class EntityRecognizerPIITransform(beam.DoFn):
         # Get context indicators from JSON config
         context_indicators = self.config.get('context_indicators', {})
         
-        # Add conversational_words to context_indicators so custom recognizers can use them
+        # Add shared configuration to context_indicators for recognizers
         context_indicators['conversational_words'] = list(self.conversational_words)
+        context_indicators['detection_scores'] = self.detection_scores
+        context_indicators['number_words'] = yaml_config.get('number_words', [])
         
         # Initialize conversation context tracker with config
         self.context_tracker = ConversationContextTracker(context_indicators)
@@ -107,7 +111,7 @@ class EntityRecognizerPIITransform(beam.DoFn):
         # Keep default recognizers for broad coverage, but we'll filter results in post-processing
         # This way we catch names that don't match our patterns, but still prevent false positives
 
-        # Register stateful EntityRecognizers (all use context_tracker and context_indicators)
+        # Register stateful EntityRecognizers (all use context_tracker, context_indicators, and detection_scores)
         try:
             self.analyzer.registry.add_recognizer(StatefulReferenceNumberRecognizer(self.context_tracker, context_indicators))
             self.analyzer.registry.add_recognizer(StatefulBankDigitsRecognizer(self.context_tracker, context_indicators))
@@ -117,17 +121,20 @@ class EntityRecognizerPIITransform(beam.DoFn):
             self.analyzer.registry.add_recognizer(StatefulPostcodeRecognizer(self.context_tracker, context_indicators))
             self.analyzer.registry.add_recognizer(StatefulEmailRecognizer(self.context_tracker, context_indicators))
             self.analyzer.registry.add_recognizer(StatefulPasswordRecognizer(self.context_tracker, context_indicators))
-            logging.info("Stateful EntityRecognizers registered (using context_tracker and context_indicators from config)")
+            self.analyzer.registry.add_recognizer(StatefulPhoneNumberRecognizer(self.context_tracker, context_indicators))
+            logging.info("Stateful EntityRecognizers registered (using context_tracker, context_indicators, and detection_scores from config)")
         except Exception as e:
             logging.warning("Could not register recognizer: %s", e)
 
     def _load_deny_list_config(self, config_path):
         """
-        Load deny_list and validation config from YAML.
+        Load deny_list, validation config, detection scores, and number_words from YAML.
         
         Returns a dict with:
           - deny_list: Set of uppercase words for exact matching and validation
           - validation: Dict with person_entity validation settings
+          - detection_scores: Dict with score thresholds for detection filtering
+          - number_words: List of spoken number words (shared across recognizers)
         """
         import yaml
         try:
@@ -144,15 +151,50 @@ class EntityRecognizerPIITransform(beam.DoFn):
                     'max_conversational_ratio': 0.5
                 })
                 
+                # Load detection score settings
+                detection_scores = config.get('detection_scores', {})
+                scores_config = {
+                    'min_score_threshold': detection_scores.get('min_score_threshold', 0.7),
+                    'recognizer_scores': detection_scores.get('recognizer_scores', {
+                        'high_confidence': 0.95,
+                        'very_high_confidence': 0.98,
+                        'medium_high_confidence': 0.92,
+                        'medium_confidence': 0.90,
+                        'low_confidence': 0.80
+                    })
+                }
+                
+                # Load number words (shared across all recognizers)
+                number_words = config.get('number_words', [])
+                # Convert to uppercase for consistency
+                number_words_list = [word.upper() for word in number_words]
+                
                 return {
                     'deny_list': deny_list_set,
-                    'validation': person_validation
+                    'validation': person_validation,
+                    'detection_scores': scores_config,
+                    'number_words': number_words_list
                 }
         except Exception as e:
-            logging.warning(f"Could not load deny_list config from YAML: {e}")
+            logging.warning(f"Could not load config from YAML: {e}")
+            # Fallback defaults
             return {
                 'deny_list': set(),
-                'validation': {'enabled': True, 'max_conversational_ratio': 0.5}
+                'validation': {'enabled': True, 'max_conversational_ratio': 0.5},
+                'detection_scores': {
+                    'min_score_threshold': 0.7,
+                    'recognizer_scores': {
+                        'high_confidence': 0.95,
+                        'very_high_confidence': 0.98,
+                        'medium_high_confidence': 0.92,
+                        'medium_confidence': 0.90,
+                        'low_confidence': 0.80
+                    }
+                },
+                'number_words': ['ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
+                               'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN',
+                               'SEVENTEEN', 'EIGHTEEN', 'NINETEEN', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY',
+                               'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY', 'HUNDRED', 'OH', 'DOUBLE', 'TRIPLE']
             }
     
     def _is_likely_false_positive(self, text_upper):
@@ -213,12 +255,25 @@ class EntityRecognizerPIITransform(beam.DoFn):
                 for r in analyzer_result:
                     matched_text = content[r.start:r.end].upper()
                     
-                    # Skip if text is in deny_list (case-insensitive)
-                    if matched_text in self.deny_list:
-                        continue
+                    # Debug: Log all detections before filtering
+                    logging.debug(f"Detected {r.entity_type}: '{matched_text}' (score: {r.score:.2f})")
                     
-                    # Skip if score is too low
-                    if r.score <= 0.7:
+                    # Skip if text is in deny_list (exact match or contains deny_list word)
+                    # BUT: Don't apply deny_list filter to explicitly structured entities like PHONE_NUMBER
+                    if r.entity_type not in ["PHONE_NUMBER", "EMAIL_ADDRESS", "CREDIT_CARD", "IBAN_CODE"]:
+                        if matched_text in self.deny_list:
+                            logging.debug(f"Filtered by deny_list (exact match): '{matched_text}'")
+                            continue
+                        
+                        # Also skip if ANY word in matched_text is in deny_list
+                        words_in_match = matched_text.split()
+                        if any(word in self.deny_list for word in words_in_match):
+                            logging.debug(f"Filtered by deny_list (word match): '{matched_text}'")
+                            continue
+                    
+                    # Skip if score is too low (configurable threshold)
+                    min_score = self.detection_scores.get('min_score_threshold', 0.7)
+                    if r.score <= min_score:
                         continue
                     
                     # SMART FILTER: For PERSON entities, validate them when NOT expecting a name
