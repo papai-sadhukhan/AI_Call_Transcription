@@ -1,0 +1,22 @@
+# Python build artifacts
+*.egg-info/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+build/
+dist/
+*.egg
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+pipeline_debug.log
+
+# Test files
+test_*.py
+debug_*.py

@@ -1,5 +1,6 @@
 # Requirements for local development and testing
-apache-beam==2.66.0
+# Using Beam 2.61.0 to match Dataflow default SDK container
+apache-beam==2.61.0
 presidio_analyzer==2.2.359
 presidio_anonymizer==2.2.359
 spacy==3.8.7

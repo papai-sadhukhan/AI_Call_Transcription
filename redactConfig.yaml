@@ -293,28 +293,12 @@ validation:
 # ============================================================================
 # DETECTION SCORE SETTINGS
 # ============================================================================
-# Configure confidence scores for entity detection and filtering
+# Simple scoring: All custom analyzers use 0.85 (hardcoded in Python)
+# Only parameterize the minimum threshold for redaction filtering
 # ============================================================================
 detection_scores:
-  # Minimum score threshold - filter out detections below this score
+  # Minimum score threshold - redact if detection score is >= this value
   min_score_threshold: 0.7
-  
-  # Recognition confidence scores by pattern type
-  recognizer_scores:
-    # High confidence: Explicit context-based detection
-    high_confidence: 0.95
-    
-    # High confidence variant: Self-introduction patterns
-    very_high_confidence: 0.98
-    
-    # Medium-high confidence: Direct patterns with clear indicators
-    medium_high_confidence: 0.92
-    
-    # Medium confidence: Patterns with some ambiguity
-    medium_confidence: 0.90
-    
-    # Lower confidence: Fallback patterns
-    low_confidence: 0.80
 
 # ============================================================================
 # SPOKEN NUMBER WORDS

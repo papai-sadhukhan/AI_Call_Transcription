@@ -6,7 +6,8 @@
     "staging_location": "gs://dataflow-staging-europe-west1-181982885154/staging",
     "temp_bigquery_dataset" : "dataflow_temp_dataset",
     "subnetwork": "https://www.googleapis.com/compute/v1/projects/skyuk-uk-reg-expmnt-dev/regions/europe-west1/subnetworks/expmnt-network",
-    "job_name": "call-transcript-redaction-job"
+    "job_name": "call-transcript-redaction-job",
+    "service_account_email": "redaction-tf-df@skyuk-uk-reg-expmnt-dev.iam.gserviceaccount.com"
   },
   "dataset": {
     "input": "uk_call_transcript_exprmnt",
@@ -107,7 +108,11 @@
     "postcode": [
       "POSTCODE",
       "POST CODE",
-      "POSTAL CODE"
+      "POSTAL CODE",
+      "AIR CODE",
+      "AREA CODE",
+      "ZIP CODE",
+      "ZIPCODE"
     ],
     "email": [
       "EMAIL",
@@ -120,6 +125,13 @@
       "PASSCODE",
       "VERIFICATION CODE",
       "PIN"
+    ],
+    "phone_number": [
+      "MOBILE NUMBER",
+      "PHONE NUMBER",
+      "TELEPHONE NUMBER",
+      "CONTACT NUMBER",
+      "NUMBER"
     ],
     "number_words": [
       "ZERO",

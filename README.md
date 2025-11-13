@@ -58,14 +58,6 @@ Run Local Pipeline - Prod
 ```bash
 python main.py --config_path config_prod.json --runner DirectRunner
 ```
-## What's Different from Production
-
-| Production (Parent Directory) | Local Development (This Folder) |
-|-------------------------------|----------------------------------|
-| **Tables**: Original production tables | **Tables**: Experiment tables (td_verint_transcription_raw → td_verint_transcription_redacted_temp) |
-| **Project**: skyuk-uk-customer-tds-dev | **Project**: skyuk-uk-reg-expmnt-prod |
-| **Default Runner**: DataflowRunner | **Flexible Runner**: DirectRunner (local) or DataflowRunner (cloud) |
-| **Usage**: Fixed configuration | **Usage**: Command-line configurable |
 
 ## Files in This Directory
 

@@ -65,8 +65,54 @@ class EntityRecognizerPIITransform(beam.DoFn):
         self.anonymizer = None
         self.operators = {}
         self.context_tracker = None
+    
+    @staticmethod
+    def deconstruct_transcript(conversation_transcript: list) -> str:
+        """
+        Deconstructs a conversation transcript into a single string.
+        Each conversation turn has role (agent/customer) and content.
+        Format: [{"role":"agent","content":"text"}, {"role":"customer","content":"text"}]
+        """
+        if not conversation_transcript:
+            return ""
+        
+        content_parts = []
+        for turn in conversation_transcript:
+            if isinstance(turn, dict) and 'content' in turn:
+                content_parts.append(turn['content'])
+        
+        return " ".join(content_parts)
 
     def setup(self):
+        # Download spaCy model if not available (for Dataflow workers)
+        try:
+            import spacy
+            try:
+                spacy.load('en_core_web_lg')
+            except OSError:
+                # Model not found, download it
+                import subprocess
+                import sys
+                logging.info("Downloading spaCy model en_core_web_lg...")
+                subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_lg'])
+                logging.info("spaCy model downloaded successfully")
+        except Exception as e:
+            logging.warning(f"Could not ensure spaCy model is available: {e}")
+        
+        # Import entity recognizers (needed on Dataflow workers)
+        from utils.entity_recognizers import (
+            ConversationContextTracker,
+            StatefulReferenceNumberRecognizer,
+            StatefulBankDigitsRecognizer,
+            StatefulCardDigitsRecognizer,
+            StatefulNameRecognizer,
+            StatefulAddressRecognizer,
+            StatefulPostcodeRecognizer,
+            StatefulEmailRecognizer,
+            StatefulPasswordRecognizer,
+            StatefulPhoneNumberRecognizer
+        )
+        
         # local imports for Presidio
         from presidio_analyzer import AnalyzerEngine, RecognizerRegistry
         from presidio_anonymizer import AnonymizerEngine
@@ -151,17 +197,10 @@ class EntityRecognizerPIITransform(beam.DoFn):
                     'max_conversational_ratio': 0.5
                 })
                 
-                # Load detection score settings
+                # Load detection score settings - simplified
                 detection_scores = config.get('detection_scores', {})
                 scores_config = {
-                    'min_score_threshold': detection_scores.get('min_score_threshold', 0.7),
-                    'recognizer_scores': detection_scores.get('recognizer_scores', {
-                        'high_confidence': 0.95,
-                        'very_high_confidence': 0.98,
-                        'medium_high_confidence': 0.92,
-                        'medium_confidence': 0.90,
-                        'low_confidence': 0.80
-                    })
+                    'min_score_threshold': detection_scores.get('min_score_threshold', 0.7)
                 }
                 
                 # Load number words (shared across all recognizers)
@@ -182,14 +221,7 @@ class EntityRecognizerPIITransform(beam.DoFn):
                 'deny_list': set(),
                 'validation': {'enabled': True, 'max_conversational_ratio': 0.5},
                 'detection_scores': {
-                    'min_score_threshold': 0.7,
-                    'recognizer_scores': {
-                        'high_confidence': 0.95,
-                        'very_high_confidence': 0.98,
-                        'medium_high_confidence': 0.92,
-                        'medium_confidence': 0.90,
-                        'low_confidence': 0.80
-                    }
+                    'min_score_threshold': 0.7
                 },
                 'number_words': ['ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
                                'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN',
@@ -247,7 +279,27 @@ class EntityRecognizerPIITransform(beam.DoFn):
                 
                 # STATEFUL APPROACH: Analyze current turn FIRST (uses context from previous turn)
                 # Recognizers use context_tracker state set by PREVIOUS turn
+                # Debug: Log context state for Customer turns when both address and postcode expected
+                # if role == "Customer" and self.context_tracker.expecting_address and self.context_tracker.expecting_postcode:
+                #     logging.info(f"*** ANALYZING CUSTOMER TURN WITH COMBINED ADDRESS+POSTCODE EXPECTED ***")
+                #     logging.info(f"    Content: {content[:80]}...")
+                #     logging.info(f"    Last agent turn: {self.context_tracker.last_turn_text[:80]}...")
+                #     logging.info(f"    expecting_address: {self.context_tracker.expecting_address}")
+                #     logging.info(f"    expecting_postcode: {self.context_tracker.expecting_postcode}")
+                #     logging.info(f"    expecting_name: {self.context_tracker.expecting_name}")
+                
                 analyzer_result = self.analyzer.analyze(text=content, language="en")
+                
+                # Debug: Log analyzer results for combined detection case
+                if role == "Customer" and self.context_tracker.expecting_address and self.context_tracker.expecting_postcode:
+                    print(f"*** MAIN: Analyzer returned {len(analyzer_result)} results for combined case:")
+                    for r in analyzer_result:
+                        matched = content[r.start:r.end]
+                        print(f"      - {r.entity_type}: '{matched[:50]}...' (score: {r.score:.2f})")
+                    logging.info(f"    Analyzer returned {len(analyzer_result)} results:")
+                    for r in analyzer_result:
+                        matched = content[r.start:r.end]
+                        logging.info(f"      - {r.entity_type}: '{matched[:50]}...' (score: {r.score:.2f})")
                 
                 # Filter results by score AND deny_list
                 # Remove false positives using deny_list from YAML and intelligent validation
@@ -256,19 +308,21 @@ class EntityRecognizerPIITransform(beam.DoFn):
                     matched_text = content[r.start:r.end].upper()
                     
                     # Debug: Log all detections before filtering
+                    if role == "Customer" and self.context_tracker.expecting_address and self.context_tracker.expecting_postcode:
+                        print(f"*** FILTER: Processing {r.entity_type}: '{matched_text[:50]}...'")
                     logging.debug(f"Detected {r.entity_type}: '{matched_text}' (score: {r.score:.2f})")
                     
-                    # Skip if text is in deny_list (exact match or contains deny_list word)
-                    # BUT: Don't apply deny_list filter to explicitly structured entities like PHONE_NUMBER
-                    if r.entity_type not in ["PHONE_NUMBER", "EMAIL_ADDRESS", "CREDIT_CARD", "IBAN_CODE"]:
+                    # Apply deny_list filter ONLY to PERSON entities to prevent false positives
+                    # All other entities (postcodes, passwords, emails, etc.) should not be filtered by deny_list
+                    if r.entity_type == "PERSON":
                         if matched_text in self.deny_list:
-                            logging.debug(f"Filtered by deny_list (exact match): '{matched_text}'")
+                            logging.debug(f"Filtered PERSON by deny_list (exact match): '{matched_text}'")
                             continue
                         
                         # Also skip if ANY word in matched_text is in deny_list
                         words_in_match = matched_text.split()
                         if any(word in self.deny_list for word in words_in_match):
-                            logging.debug(f"Filtered by deny_list (word match): '{matched_text}'")
+                            logging.debug(f"Filtered PERSON by deny_list (word match): '{matched_text}'")
                             continue
                     
                     # Skip if score is too low (configurable threshold)
@@ -279,22 +333,38 @@ class EntityRecognizerPIITransform(beam.DoFn):
                     # SMART FILTER: For PERSON entities, validate them when NOT expecting a name
                     # This catches false positives from default recognizers (SpacyRecognizer, etc.)
                     # If we ARE expecting a name, trust all recognizers (custom + default)
-                    if r.entity_type == "PERSON" and not self.context_tracker.expecting_name:
-                        # Check if detection is from our custom recognizer (has analysis_explanation with recognizer attribute)
-                        is_custom_recognizer = False
-                        if r.analysis_explanation and hasattr(r.analysis_explanation, 'recognizer'):
-                            recognizer_name = r.analysis_explanation.recognizer
-                            # Our custom recognizers have "Stateful" in the name
-                            is_custom_recognizer = "Stateful" in recognizer_name
+                    # EXCEPTION: When BOTH address AND postcode are expected together, skip PERSON entities
+                    # to allow AddressRecognizer to handle the full combined response
+                    if r.entity_type == "PERSON":
+                        # Skip PERSON when both address and postcode expected (combined detection)
+                        if self.context_tracker.expecting_address and self.context_tracker.expecting_postcode:
+                            logging.debug(f"Skipping PERSON '{matched_text}' - combined address+postcode expected")
+                            continue
                         
-                        # Only validate default recognizer detections (not our custom ones)
-                        if not is_custom_recognizer:
-                            # Check if the matched text is mostly conversational words
-                            if self._is_likely_false_positive(matched_text):
-                                logging.debug(f"Filtered false positive PERSON: '{matched_text}' (conversational ratio too high)")
-                                continue  # Skip this false positive
+                        # Otherwise, validate when NOT expecting name
+                        if not self.context_tracker.expecting_name:
+                            # Check if detection is from our custom recognizer (has analysis_explanation with recognizer attribute)
+                            is_custom_recognizer = False
+                            if r.analysis_explanation and hasattr(r.analysis_explanation, 'recognizer'):
+                                recognizer_name = r.analysis_explanation.recognizer
+                                # Our custom recognizers have "Stateful" in the name
+                                is_custom_recognizer = "Stateful" in recognizer_name
+                            
+                            # Only validate default recognizer detections (not our custom ones)
+                            if not is_custom_recognizer:
+                                # Check if the matched text is mostly conversational words
+                                if self._is_likely_false_positive(matched_text):
+                                    logging.debug(f"Filtered false positive PERSON: '{matched_text}' (conversational ratio too high)")
+                                    continue  # Skip this false positive
                     
                     filtered_results.append(r)
+                
+                # Debug: Log filtered results for combined case
+                if role == "Customer" and self.context_tracker.expecting_address and self.context_tracker.expecting_postcode:
+                    print(f"*** MAIN: After filtering, {len(filtered_results)} results remain:")
+                    for r in filtered_results:
+                        matched = content[r.start:r.end]
+                        print(f"      - {r.entity_type}: '{matched[:50]}...' (score: {r.score:.2f})")
                 
                 # Log matched entities for audit trail
                 for result in filtered_results:
@@ -325,7 +395,7 @@ class EntityRecognizerPIITransform(beam.DoFn):
 
         # Update element with redacted conversation
         element["conversation_transcript"] = redacted_conversation
-        element["redacted_transcript"] = deconstruct_transcript(redacted_conversation)
+        element["redacted_transcript"] = self.deconstruct_transcript(redacted_conversation)
         element["redacted_entity"] = "; ".join(redacted_entity_rows)
         yield element
 
@@ -351,37 +421,97 @@ def run(argv=None):
         for option in config['dataflow']['dataflow_service_options']:
             pipeline_args.append(f'--dataflow_service_options={option}')
     
-    # Add worker service account if specified in config
-    if 'worker_service_account' in config.get('project', {}):
-        pipeline_args.append(f'--service_account_email={config["project"]["worker_service_account"]}')
-        print(f"Using worker service account: {config['project']['worker_service_account']}")
+    # Add service account if specified in config
+    if 'service_account_email' in config.get('project', {}):
+        pipeline_args.append(f'--service_account_email={config["project"]["service_account_email"]}')
+        print(f"Using service account: {config['project']['service_account_email']}")
+    
+    # Add setup file for custom modules and dependencies
+    setup_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "setup.py")
+    if os.path.exists(setup_file):
+        pipeline_args.append(f'--setup_file={setup_file}')
+        print(f"Using setup file: {setup_file}")
 
     options = PipelineOptions(pipeline_args)
 
     print(f"Running STATEFUL ENTITY RECOGNIZER approach with config: {args.config_path}")
-    # Set Dataflow job project
+    
+    # Set common options for both runners
+    google_cloud_options = options.view_as(GoogleCloudOptions)
+    google_cloud_options.project = config['project']['dataflow_project_id']
+    
+    # Set temp_location for BigQuery operations (required for both DirectRunner and DataflowRunner)
+    if 'staging_location' in config['project']:
+        temp_location = config['project']['staging_location'].replace('/staging', '/temp')
+        google_cloud_options.temp_location = temp_location
+        print(f"Using temp location: {temp_location}")
+    
+    # Set Dataflow-specific options if using DataflowRunner
     if not options.get_all_options().get('runner') or options.get_all_options().get('runner') == 'DataflowRunner':
         options.view_as(StandardOptions).runner = 'DataflowRunner'
-        google_cloud_options = options.view_as(GoogleCloudOptions)
-        google_cloud_options.project = config['project']['dataflow_project_id']
         google_cloud_options.region = config['project']['region']
         google_cloud_options.staging_location = config['project']['staging_location']
         google_cloud_options.job_name = config['project']['job_name']
         
-        # Set service account if provided in config
-        if 'service_account' in config['project']:
-            google_cloud_options.service_account_email = config['project']['service_account']
-            print(f"Using service account: {config['project']['service_account']}")
+        # Set subnetwork if provided in config
+        if 'subnetwork' in config['project']:
+            worker_options = options.view_as(WorkerOptions)
+            worker_options.subnetwork = config['project']['subnetwork']
+            print(f"Using subnetwork: {config['project']['subnetwork']}")
+        
+        # Service account already added to pipeline_args above
+        if 'service_account_email' in config['project']:
+            print(f"Dataflow will use service account: {config['project']['service_account_email']}")
+
+    # Get BigQuery configuration
+    bigquery_project = config['project']['bigquery_project_id']
+    output_dataset = config['dataset']['output']
+    target_table_name = config['tables']['target']['name']
+    output_table = f"{bigquery_project}.{output_dataset}.{target_table_name}"
+
+    # Clean up temp tables from dataflow_temp_dataset BEFORE starting the pipeline (if any exist)
+    temp_dataset_id = config['project']['temp_bigquery_dataset']
+    try:
+        from google.cloud import bigquery as bq_client
+        client = bq_client.Client(project=bigquery_project)
+        
+        # List all tables in temp dataset
+        dataset_id = f"{bigquery_project}.{temp_dataset_id}"
+        tables = list(client.list_tables(dataset_id))
+        
+        if tables:
+            print(f"\nCleaning up {len(tables)} temp tables from {temp_dataset_id}:")
+            for table in tables:
+                table_id = f"{bigquery_project}.{temp_dataset_id}.{table.table_id}"
+                print(f"  - Deleting {table.table_id}")
+                client.delete_table(table_id, not_found_ok=True)
+            print(f"Successfully cleaned up all temp tables\n")
+    except Exception as e:
+        print(f"Warning: Could not check/clean temp tables from {temp_dataset_id}: {e}")
+        print("Proceeding with pipeline execution...\n")
+    
+    # Truncate target table BEFORE starting the pipeline
+    print(f"Truncating target table: {output_table}")
+    try:
+        from google.cloud import bigquery as bq_client
+        client = bq_client.Client(project=bigquery_project)
+        
+        # Truncate table using TRUNCATE TABLE statement
+        truncate_query = f"TRUNCATE TABLE `{output_table}`"
+        query_job = client.query(truncate_query)
+        query_job.result()  # Wait for completion
+        print(f"Successfully truncated table: {output_table}\n")
+    except Exception as e:
+        print(f"Warning: Could not truncate table {output_table}: {e}")
+        print("Proceeding with pipeline execution...\n")
 
     with beam.Pipeline(options=options) as p:
         # Use BigQuery project for table references and queries
-        input_table = f"{config['project']['bigquery_project_id']}.{config['dataset']['input']}.{config['tables']['source']['name']}"
-        output_table = f"{config['project']['bigquery_project_id']}.{config['dataset']['output']}.{config['tables']['target']['name']}"
+        input_table = f"{bigquery_project}.{config['dataset']['input']}.{config['tables']['source']['name']}"
         select_fields = config['processing']['selected_fields']
         condition = config['processing']['condition']
-        bigquery_project = config['project']['bigquery_project_id']
         dataset_ref = bigquery.DatasetReference()
-        dataset_ref.projectId = config['project']['bigquery_project_id']
+        dataset_ref.projectId = bigquery_project
         dataset_ref.datasetId = config['project']['temp_bigquery_dataset']
         input_query = f"""
         SELECT {', '.join(select_fields)}
@@ -393,6 +523,7 @@ def run(argv=None):
         print(input_query)
 
         def process_row(row):
+            import json
             # Get the source column name for transcript (always string)
             transcript_src_col = config['tables']['source']['columns'].get('input_transcript')
             conversation_json = row.get(transcript_src_col)
@@ -405,6 +536,7 @@ def run(argv=None):
             return row
 
         def prepare_output_row(row):
+            import datetime
             # Write redacted transcript to transcription_redacted column
             row[config['tables']['target']['columns'].get('transcription_redacted')] = json.dumps(row["conversation_transcript"], separators=(",", ":"))
             output_row = {}
@@ -417,12 +549,12 @@ def run(argv=None):
             output_row['load_dt'] = datetime.datetime.now().isoformat()
             return output_row
 
+        # Use EXPORT method to avoid temp table conflicts
+        # EXPORT is more reliable for Dataflow, though slightly slower than DIRECT_READ
         bigquery_data = p | "Read from BigQuery Table" >> beam.io.ReadFromBigQuery(
             query=input_query,
-            method="DIRECT_READ",
             use_standard_sql=True,
             project=bigquery_project,
-            temp_dataset=dataset_ref,
         )
         # bigquery_data | "Print Read Row" >> beam.Map(lambda row: print(f"Read from BigQuery: {row}"))
 
