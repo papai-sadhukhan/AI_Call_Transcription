@@ -4,6 +4,7 @@ ALL recognizers use ConversationContextTracker for stateful detection.
 NO context window concatenation - pure stateful approach.
 """
 import re
+import logging
 from typing import List, Optional, Dict
 from presidio_analyzer import EntityRecognizer, RecognizerResult, AnalysisExplanation
 
@@ -39,12 +40,10 @@ class ConversationContextTracker:
         """
         if self._number_words_list is None:
             # Load once from config, cache for reuse
-            self._number_words_list = self.context_indicators.get('number_words', [
-                'ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
-                'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN',
-                'SEVENTEEN', 'EIGHTEEN', 'NINETEEN', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY',
-                'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY', 'HUNDRED', 'OH', 'DOUBLE', 'TRIPLE'
-            ])
+            self._number_words_list = self.context_indicators.get('number_words', [])
+            if not self._number_words_list:
+                logger = logging.getLogger("entity_redaction")
+                logger.warning("number_words not found in config, using empty list. Number word detection may not work.")
             self._number_words_set = set(self._number_words_list)
         
         return self._number_words_set if as_set else self._number_words_list
@@ -70,8 +69,8 @@ class ConversationContextTracker:
         
         # DEBUG: Log if we detect the combined pattern
         if "FULL NAME" in self.last_turn_text and "ADDRESS" in self.last_turn_text and "AIR CODE" in self.last_turn_text:
-            print(f"*** CONTEXT TRACKER: Detected combined pattern in: {text[:80]}...")
-            logging.info(f"ConversationContextTracker: Detected combined name+address+postcode pattern in turn: {text[:80]}...")
+            logger = logging.getLogger("entity_redaction")
+            logger.debug(f"CONTEXT TRACKER: Detected combined pattern in: {text[:80]}...")
         
         # Reference number detection
         reference_indicators = self.context_indicators.get('reference_number', [])
@@ -111,8 +110,8 @@ class ConversationContextTracker:
         
         # DEBUG: Log flags if both are set
         if self.expecting_address and self.expecting_postcode:
-            print(f"*** CONTEXT TRACKER: Set expecting_address=True AND expecting_postcode=True")
-            logging.info(f"ConversationContextTracker: Set expecting_address=True AND expecting_postcode=True")
+            logger = logging.getLogger("entity_redaction")
+            logger.debug(f"CONTEXT TRACKER: Set expecting_address=True AND expecting_postcode=True")
         
         # Email detection
         email_indicators = self.context_indicators.get('email', [])
@@ -406,17 +405,26 @@ class StatefulNameRecognizer(EntityRecognizer):
         # Get conversational words from context_indicators (loaded from deny_list in YAML)
         # These are words that typically indicate the text is NOT a name
         conversational_words_list = self.context_indicators.get('conversational_words', [])
-        conversational_words = set(conversational_words_list) if conversational_words_list else set([
-            'THE', 'IS', 'IT', 'WITH', 'YOU', 'YOUR', "YOU'RE", 'I', 'A', 'AN', 'TO', 'OF'
-        ])
+        if not conversational_words_list:
+            logger = logging.getLogger("entity_redaction")
+            logger.warning("conversational_words not found in config, name detection may not work correctly.")
+        conversational_words = set(conversational_words_list) if conversational_words_list else set()
         
         # UNCONDITIONAL PATTERNS: Agent self-introductions (works without expecting_name)
         # ONLY use the most explicit pattern to avoid false positives
         # "MY NAME IS X" is the clearest indicator of name introduction
         
         # Common words that typically follow a name (boundary detection)
-        # Include contractions like I'M, YOU'RE, etc.
-        name_boundaries = r'(?:I\'M|IM|YOU\'RE|YOURE|HOW|CAN|WILL|AND|THE|IS|ARE|FROM|AT|WHO|WHAT|WHERE|WHEN|WHY|WITH|TO|FOR|IN|ON|SPEAKING|HERE|CALLING|TODAY|HELP|ASSIST|GOOD|GREAT|NICE|THANK|THANKS)'
+        # Load from config or use empty pattern
+        name_boundaries_list = self.context_indicators.get('name_boundaries', [])
+        if name_boundaries_list:
+            # Escape special regex characters and join with |
+            escaped_boundaries = [w.replace("'", "\\'") for w in name_boundaries_list]
+            name_boundaries = r'(?:' + '|'.join(escaped_boundaries) + ')'
+        else:
+            logger = logging.getLogger("entity_redaction")
+            logger.warning("name_boundaries not found in config, using minimal pattern.")
+            name_boundaries = r'(?:$)'  # Match nothing
         
         agent_intro_patterns = [
             # MY NAME IS SHAUNA HOW... → captures only SHAUNA
@@ -581,8 +589,9 @@ class StatefulNameRecognizer(EntityRecognizer):
         # Strategy: When expecting a name, redact the entire response if it consists primarily of 
         # capitalized words (filtering out filler words)
         if not results:
-            # Skip common filler words at start
-            filler_words = {'YES', 'YEAH', 'SO', 'IT', 'ITS', "IT'S", 'IS', 'THE', 'MY', 'AND', 'A', 'AN'}
+            # Skip common filler words at start (load from config)
+            filler_words_list = self.context_indicators.get('filler_words', [])
+            filler_words = set(filler_words_list) if filler_words_list else set()
             
             # Additional validation: not a common verb/adjective/conversational word
             common_non_names = {
@@ -661,7 +670,8 @@ class StatefulAddressRecognizer(EntityRecognizer):
         When agent asks for both address AND postcode together (e.g., "FULL ADDRESS WITH POSTCODE"),
         redact the entire response as it contains both PII elements.
         """
-        print(f"*** AddressRecognizer.analyze called: expecting_address={self.context_tracker.expecting_address}, expecting_postcode={self.context_tracker.expecting_postcode}, text={text[:60] if text else 'EMPTY'}...")
+        logger = logging.getLogger("entity_redaction")
+        logger.debug(f"AddressRecognizer.analyze called: expecting_address={self.context_tracker.expecting_address}, expecting_postcode={self.context_tracker.expecting_postcode}, text={text[:60] if text else 'EMPTY'}...")
         results = []
         text_upper = text.upper()
         
@@ -674,16 +684,14 @@ class StatefulAddressRecognizer(EntityRecognizer):
         # where the response contains name + address + postcode all together
         if self.context_tracker.expecting_address and self.context_tracker.expecting_postcode:
             # DEBUG
-            import logging
-            print(f"*** AddressRecognizer: COMBINED detection branch HIT!")
-            print(f"    Text: {text[:80]}...")
-            print(f"    Stripped length: {len(text.strip())}")
-            logging.info(f"AddressRecognizer: COMBINED detection triggered for text: {text[:80]}...")
-            logging.info(f"  expecting_address={self.context_tracker.expecting_address}, expecting_postcode={self.context_tracker.expecting_postcode}")
+            logger.debug(f"AddressRecognizer: COMBINED detection branch HIT!")
+            logger.debug(f"  Text: {text[:80]}...")
+            logger.debug(f"  Stripped length: {len(text.strip())}")
+            logger.debug(f"  expecting_address={self.context_tracker.expecting_address}, expecting_postcode={self.context_tracker.expecting_postcode}")
             
             # Redact entire response (it's all PII - name, address, and postcode combined)
             if len(text.strip()) > 0:
-                print(f"    Creating LOCATION result...")
+                logger.debug(f"  Creating LOCATION result...")
                 results.append(RecognizerResult(
                     entity_type="LOCATION",
                     start=0,
@@ -696,16 +704,16 @@ class StatefulAddressRecognizer(EntityRecognizer):
                         original_score=self.detection_score
                     )
                 ))
-                print(f"    Returning {len(results)} results")
-                logging.info(f"  AddressRecognizer: Returning LOCATION result for full text")
+                logger.debug(f"  Returning {len(results)} results")
                 return results
             else:
-                print(f"    Text is empty, skipping")
+                logger.debug(f"  Text is empty, skipping")
         
         # Simple approach: If context expects address, check if response has alphanumeric content
-        # Skip common filler words (Note: 'AND' removed to capture address parts like "FORTY AND V")
+        # Skip common filler words (load from config)
         words = text_upper.split()
-        filler_words = {'YES', 'YEAH', 'SO', 'IT', 'ITS', "IT'S", 'IS', 'THE', 'MY', 'A', 'AN'}
+        filler_words_list = self.context_indicators.get('filler_words', [])
+        filler_words = set(filler_words_list) if filler_words_list else set()
         
         # Get number words from shared config
         number_words = self.context_tracker.get_number_words(as_set=True)
@@ -802,7 +810,9 @@ class StatefulPostcodeRecognizer(EntityRecognizer):
             return results
         
         # Simple approach: If context expects postcode, look for letters + numbers
-        filler_words = {'YES', 'YEAH', 'SO', 'IT', 'ITS', "IT'S", 'IS', 'THE', 'MY', 'AND', 'A', 'AN'}
+        # Load filler words from config
+        filler_words_list = self.context_indicators.get('filler_words', [])
+        filler_words = set(filler_words_list) if filler_words_list else set()
         
         # Get number words from shared config
         number_words = self.context_tracker.get_number_words(as_set=True)
@@ -956,9 +966,10 @@ class StatefulPasswordRecognizer(EntityRecognizer):
         # Get conversational words from config (loaded from deny_list in YAML)
         # These words are already included in deny_list: WRITTEN, DOWN, SOMEWHERE, PASSWORD, LET, CHECK
         conversational_words_list = self.context_indicators.get('conversational_words', [])
-        conversational_words = set(conversational_words_list) if conversational_words_list else set([
-            'THE', 'IS', 'IT', 'WITH', 'PASSWORD', 'WRITTEN', 'DOWN', 'SOMEWHERE'
-        ])
+        if not conversational_words_list:
+            logger = logging.getLogger("entity_redaction")
+            logger.warning("conversational_words not found in config, password detection may not work correctly.")
+        conversational_words = set(conversational_words_list) if conversational_words_list else set()
         
         # Strategy: Find continuous sequences of single letters, number words, or digits
         # that don't include conversational words

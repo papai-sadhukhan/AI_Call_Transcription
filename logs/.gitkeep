@@ -1,0 +1,3 @@
+# This directory contains application logs when running locally with DirectRunner
+# Log files are automatically created as logs/app.log
+# Logs are rotated when they reach 10MB (up to 5 backup files)

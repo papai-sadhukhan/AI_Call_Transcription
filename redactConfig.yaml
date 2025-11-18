@@ -339,3 +339,66 @@ number_words:
   - OH        # Phone numbers: "OH SEVEN" = 07
   - DOUBLE    # Phone numbers: "DOUBLE SEVEN" = 77
   - TRIPLE    # Phone numbers: "TRIPLE FIVE" = 555
+
+# ============================================================================
+# FILLER WORDS
+# ============================================================================
+# Common filler words used in address, postcode, and name recognizers
+# These words are skipped when extracting PII but are not filtered as false positives
+# ============================================================================
+filler_words:
+  - "YES"
+  - YEAH
+  - SO
+  - IT
+  - ITS
+  - IT'S
+  - IS
+  - THE
+  - MY
+  - AND
+  - A
+  - AN
+
+# ============================================================================
+# NAME BOUNDARY WORDS
+# ============================================================================
+# Words that typically follow a name in agent self-introductions
+# Used to detect the end of a name in patterns like "MY NAME IS JOHN HOW CAN I HELP"
+# Format: Regex alternation pattern
+# ============================================================================
+name_boundaries:
+  - I'M
+  - IM
+  - YOU'RE
+  - YOURE
+  - HOW
+  - CAN
+  - WILL
+  - AND
+  - THE
+  - IS
+  - ARE
+  - FROM
+  - AT
+  - WHO
+  - WHAT
+  - WHERE
+  - WHEN
+  - WHY
+  - WITH
+  - TO
+  - FOR
+  - IN
+  - "ON"
+  - SPEAKING
+  - HERE
+  - CALLING
+  - TODAY
+  - HELP
+  - ASSIST
+  - GOOD
+  - GREAT
+  - NICE
+  - THANK
+  - THANKS

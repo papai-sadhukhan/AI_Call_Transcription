@@ -4,8 +4,6 @@ Uses context_tracker.update_from_agent() for stateful detection.
 NO previous turns text concatenation - only uses stateful tracker.
 """
 import logging
-logging.getLogger("presidio-analyzer").setLevel(logging.ERROR)
-logging.getLogger('apache_beam.io.gcp.bigquery').setLevel(logging.ERROR)
 import json
 from copy import deepcopy
 import datetime
@@ -29,6 +27,7 @@ from utils.entity_recognizers import (
     StatefulPasswordRecognizer,
     StatefulPhoneNumberRecognizer
 )
+from utils.logging_config import setup_logging, get_logger
 
 
 def load_config(config_path):
@@ -65,6 +64,7 @@ class EntityRecognizerPIITransform(beam.DoFn):
         self.anonymizer = None
         self.operators = {}
         self.context_tracker = None
+        self.logger = get_logger()
     
     @staticmethod
     def deconstruct_transcript(conversation_transcript: list) -> str:
@@ -93,11 +93,11 @@ class EntityRecognizerPIITransform(beam.DoFn):
                 # Model not found, download it
                 import subprocess
                 import sys
-                logging.info("Downloading spaCy model en_core_web_lg...")
+                self.logger.info("Downloading spaCy model en_core_web_lg...")
                 subprocess.check_call([sys.executable, '-m', 'spacy', 'download', 'en_core_web_lg'])
-                logging.info("spaCy model downloaded successfully")
+                self.logger.info("spaCy model downloaded successfully")
         except Exception as e:
-            logging.warning(f"Could not ensure spaCy model is available: {e}")
+            self.logger.warning(f"Could not ensure spaCy model is available: {e}")
         
         # Import entity recognizers (needed on Dataflow workers)
         from utils.entity_recognizers import (
@@ -131,12 +131,17 @@ class EntityRecognizerPIITransform(beam.DoFn):
         self.analyzer = AnalyzerEngine(nlp_engine=provider.create_engine())
         self.anonymizer = AnonymizerEngine()
         
-        # Load deny_list, validation config, detection scores, and number_words from YAML
+        # Load deny_list, validation config, detection scores, and shared word lists from YAML
         # Single unified configuration for all recognizers
         yaml_config = self._load_deny_list_config(config_path)
         self.deny_list = yaml_config['deny_list']
         self.person_validation_config = yaml_config['validation']
         self.detection_scores = yaml_config['detection_scores']
+        
+        # Store shared word lists as instance variables for reuse in process method
+        self.number_words = yaml_config.get('number_words', [])
+        self.filler_words = yaml_config.get('filler_words', [])
+        self.name_boundaries = yaml_config.get('name_boundaries', [])
         
         # deny_list serves dual purpose:
         # 1. Exact match: if detected text exactly matches a word in deny_list, skip it
@@ -149,7 +154,9 @@ class EntityRecognizerPIITransform(beam.DoFn):
         # Add shared configuration to context_indicators for recognizers
         context_indicators['conversational_words'] = list(self.conversational_words)
         context_indicators['detection_scores'] = self.detection_scores
-        context_indicators['number_words'] = yaml_config.get('number_words', [])
+        context_indicators['number_words'] = self.number_words
+        context_indicators['filler_words'] = self.filler_words
+        context_indicators['name_boundaries'] = self.name_boundaries
         
         # Initialize conversation context tracker with config
         self.context_tracker = ConversationContextTracker(context_indicators)
@@ -168,19 +175,21 @@ class EntityRecognizerPIITransform(beam.DoFn):
             self.analyzer.registry.add_recognizer(StatefulEmailRecognizer(self.context_tracker, context_indicators))
             self.analyzer.registry.add_recognizer(StatefulPasswordRecognizer(self.context_tracker, context_indicators))
             self.analyzer.registry.add_recognizer(StatefulPhoneNumberRecognizer(self.context_tracker, context_indicators))
-            logging.info("Stateful EntityRecognizers registered (using context_tracker, context_indicators, and detection_scores from config)")
+            self.logger.info("Stateful EntityRecognizers registered (using context_tracker, context_indicators, and detection_scores from config)")
         except Exception as e:
-            logging.warning("Could not register recognizer: %s", e)
+            self.logger.warning("Could not register recognizer: %s", e)
 
     def _load_deny_list_config(self, config_path):
         """
-        Load deny_list, validation config, detection scores, and number_words from YAML.
+        Load deny_list, validation config, detection scores, and shared word lists from YAML.
         
         Returns a dict with:
           - deny_list: Set of uppercase words for exact matching and validation
           - validation: Dict with person_entity validation settings
           - detection_scores: Dict with score thresholds for detection filtering
           - number_words: List of spoken number words (shared across recognizers)
+          - filler_words: List of common filler words to skip in address/postcode detection
+          - name_boundaries: List of words that typically follow names in introductions
         """
         import yaml
         try:
@@ -203,30 +212,38 @@ class EntityRecognizerPIITransform(beam.DoFn):
                     'min_score_threshold': detection_scores.get('min_score_threshold', 0.7)
                 }
                 
-                # Load number words (shared across all recognizers)
+                # Load shared word lists (used across all recognizers)
                 number_words = config.get('number_words', [])
-                # Convert to uppercase for consistency
-                number_words_list = [word.upper() for word in number_words]
+                filler_words = config.get('filler_words', [])
+                name_boundaries = config.get('name_boundaries', [])
+                
+                # Convert to uppercase for consistency and ensure all are strings
+                # (YAML can interpret words like ON, OFF, YES, NO as booleans)
+                number_words_list = [str(word).upper() for word in number_words]
+                filler_words_list = [str(word).upper() for word in filler_words]
+                name_boundaries_list = [str(word).upper() for word in name_boundaries]
                 
                 return {
                     'deny_list': deny_list_set,
                     'validation': person_validation,
                     'detection_scores': scores_config,
-                    'number_words': number_words_list
+                    'number_words': number_words_list,
+                    'filler_words': filler_words_list,
+                    'name_boundaries': name_boundaries_list
                 }
         except Exception as e:
-            logging.warning(f"Could not load config from YAML: {e}")
+            self.logger.warning(f"Could not load config from YAML: {e}")
             # Fallback defaults
+            self.logger.warning("Could not load YAML config, using minimal defaults. Number words will not be available.")
             return {
                 'deny_list': set(),
                 'validation': {'enabled': True, 'max_conversational_ratio': 0.5},
                 'detection_scores': {
                     'min_score_threshold': 0.7
                 },
-                'number_words': ['ZERO', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
-                               'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN',
-                               'SEVENTEEN', 'EIGHTEEN', 'NINETEEN', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY',
-                               'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY', 'HUNDRED', 'OH', 'DOUBLE', 'TRIPLE']
+                'number_words': [],
+                'filler_words': [],
+                'name_boundaries': []
             }
     
     def _is_likely_false_positive(self, text_upper):
@@ -265,6 +282,20 @@ class EntityRecognizerPIITransform(beam.DoFn):
 
     def process(self, element):
         """Process each conversation turn with STATEFUL approach only"""
+        # CRITICAL: Reset context tracker for each NEW conversation element
+        # This prevents state leakage between different conversations on Dataflow workers
+        from utils.entity_recognizers import ConversationContextTracker
+        
+        # Rebuild context_indicators with all config values (using cached instance variables)
+        context_indicators = self.config.get('context_indicators', {})
+        context_indicators['conversational_words'] = list(self.conversational_words)
+        context_indicators['detection_scores'] = self.detection_scores
+        context_indicators['number_words'] = self.number_words
+        context_indicators['filler_words'] = self.filler_words
+        context_indicators['name_boundaries'] = self.name_boundaries
+        
+        self.context_tracker = ConversationContextTracker(context_indicators)
+        
         conversation = element.get("conversation_transcript", [])
         redacted_conversation = []
         redacted_entity_rows = []
@@ -292,14 +323,10 @@ class EntityRecognizerPIITransform(beam.DoFn):
                 
                 # Debug: Log analyzer results for combined detection case
                 if role == "Customer" and self.context_tracker.expecting_address and self.context_tracker.expecting_postcode:
-                    print(f"*** MAIN: Analyzer returned {len(analyzer_result)} results for combined case:")
+                    self.logger.debug(f"Analyzer returned {len(analyzer_result)} results for combined case")
                     for r in analyzer_result:
                         matched = content[r.start:r.end]
-                        print(f"      - {r.entity_type}: '{matched[:50]}...' (score: {r.score:.2f})")
-                    logging.info(f"    Analyzer returned {len(analyzer_result)} results:")
-                    for r in analyzer_result:
-                        matched = content[r.start:r.end]
-                        logging.info(f"      - {r.entity_type}: '{matched[:50]}...' (score: {r.score:.2f})")
+                        self.logger.debug(f"  - {r.entity_type}: '{matched[:50]}...' (score: {r.score:.2f})")
                 
                 # Filter results by score AND deny_list
                 # Remove false positives using deny_list from YAML and intelligent validation
@@ -309,20 +336,20 @@ class EntityRecognizerPIITransform(beam.DoFn):
                     
                     # Debug: Log all detections before filtering
                     if role == "Customer" and self.context_tracker.expecting_address and self.context_tracker.expecting_postcode:
-                        print(f"*** FILTER: Processing {r.entity_type}: '{matched_text[:50]}...'")
-                    logging.debug(f"Detected {r.entity_type}: '{matched_text}' (score: {r.score:.2f})")
+                        self.logger.debug(f"FILTER: Processing {r.entity_type}: '{matched_text[:50]}...'")
+                    self.logger.debug(f"Detected {r.entity_type}: '{matched_text}' (score: {r.score:.2f})")
                     
                     # Apply deny_list filter ONLY to PERSON entities to prevent false positives
                     # All other entities (postcodes, passwords, emails, etc.) should not be filtered by deny_list
                     if r.entity_type == "PERSON":
                         if matched_text in self.deny_list:
-                            logging.debug(f"Filtered PERSON by deny_list (exact match): '{matched_text}'")
+                            self.logger.debug(f"Filtered PERSON by deny_list (exact match): '{matched_text}'")
                             continue
                         
                         # Also skip if ANY word in matched_text is in deny_list
                         words_in_match = matched_text.split()
                         if any(word in self.deny_list for word in words_in_match):
-                            logging.debug(f"Filtered PERSON by deny_list (word match): '{matched_text}'")
+                            self.logger.debug(f"Filtered PERSON by deny_list (word match): '{matched_text}'")
                             continue
                     
                     # Skip if score is too low (configurable threshold)
@@ -361,10 +388,10 @@ class EntityRecognizerPIITransform(beam.DoFn):
                 
                 # Debug: Log filtered results for combined case
                 if role == "Customer" and self.context_tracker.expecting_address and self.context_tracker.expecting_postcode:
-                    print(f"*** MAIN: After filtering, {len(filtered_results)} results remain:")
+                    logging.info(f"*** MAIN: After filtering, {len(filtered_results)} results remain:")
                     for r in filtered_results:
                         matched = content[r.start:r.end]
-                        print(f"      - {r.entity_type}: '{matched[:50]}...' (score: {r.score:.2f})")
+                        logging.info(f"      - {r.entity_type}: '{matched[:50]}...' (score: {r.score:.2f})")
                 
                 # Log matched entities for audit trail
                 for result in filtered_results:
@@ -404,7 +431,13 @@ def run(argv=None):
     parser = argparse.ArgumentParser(description="Run the data pipeline with STATEFUL EntityRecognizer approach.")
     parser.add_argument('--config_path', type=str, required=True, help='Path to the config file (e.g., config_dev.json or config_prod.json)')
     parser.add_argument('--runner', type=str, default='DataflowRunner', help='Pipeline runner (default: DataflowRunner)')
+    parser.add_argument('--log_level', type=str, default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Logging level (default: INFO)')
     args, pipeline_args = parser.parse_known_args(argv)
+
+    # Setup logging based on runner type
+    logger = setup_logging(runner=args.runner, log_level=args.log_level)
+    logger.info(f"Starting entity redaction pipeline with runner: {args.runner}")
+    logger.info(f"Loading configuration from: {args.config_path}")
 
     config = load_config(args.config_path)
 

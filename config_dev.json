@@ -35,8 +35,8 @@
     }
   },
   "processing": {
-    "limit": 500,
-    "batch_size": 100,
+    "limit": 100,
+    "batch_size": 300,
     "selected_fields": ["transaction_id", "transaction_identifier", "file_date", "transcription"],
     "condition" : "1=1"
   },

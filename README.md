@@ -639,6 +639,7 @@ python main.py --config_path config_dev.json --runner DirectRunner
 - Runs on your local machine
 - Good for testing and development
 - Processes smaller datasets efficiently
+- **Logs to**: `logs/app.log` (with automatic rotation at 10MB, keeps 5 backups)
 
 ### Cloud Execution (DataflowRunner)
 ```bash
@@ -647,6 +648,46 @@ python main.py --config_path config_prod.json --runner DataflowRunner
 - Runs on Google Cloud Dataflow
 - Scalable for large datasets
 - Requires Google Cloud authentication
+- **Logs to**: GCP Cloud Logging with label `application=entity-redaction-pipeline`
+
+### Logging Configuration
+
+The pipeline now supports proper logging with automatic configuration based on runner type:
+
+**Log Levels:**
+```bash
+# Set log level (default: INFO)
+python main.py --config_path config_dev.json --runner DirectRunner --log_level DEBUG
+```
+
+Available levels: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+
+**Local Logging (DirectRunner):**
+- Logs written to `logs/app.log`
+- Automatic file rotation (10MB max, 5 backups)
+- Console output for real-time monitoring
+- Includes timestamps and log levels
+
+**GCP Cloud Logging (DataflowRunner):**
+- Logs sent to Google Cloud Logging
+- Searchable by label: `application=entity-redaction-pipeline`
+- Structured logging with metadata:
+  - `component=pii-anonymization`
+  - `environment=production`
+- View in GCP Console: Logging → Logs Explorer
+- Filter query: `labels.application="entity-redaction-pipeline"`
+
+**Debug Logging:**
+```bash
+# Enable detailed debug logs for troubleshooting
+python main.py --config_path config_dev.json --runner DirectRunner --log_level DEBUG
+```
+
+Debug logs include:
+- Context tracker state changes
+- Entity recognition decisions
+- Filter operations
+- Pattern matching details
 
 ## Usage Examples
 
