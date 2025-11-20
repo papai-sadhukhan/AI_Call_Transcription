@@ -3,224 +3,312 @@
 
 nlp_engine_name: spacy
 models:
-  - lang_code: en
-    model_name: en_core_web_lg
+  -
+    lang_code: en
+    model_name: en_core_web_lg  # Using large model (trf has dependency issues on Windows)
+    # model_name: en_core_web_trf  # Transformer: more accurate but requires compatible PyTorch
 
-# Deny list - words that should NOT be redacted as PII
-# Used for:
-# 1. Exact match filtering: If detected entity text EXACTLY matches a deny_list word, skip it
-# 2. Conversational validation: Calculate ratio of conversational words in PERSON entities
-#    to filter false positives (e.g., "YOU'RE CAN'T" detected as PERSON)
+ner_model_configuration:
+  model_to_presidio_entity_mapping:
+    # ---- Core Person Entities ----
+    PER: PERSON
+    PERSON: PERSON
+    HCW: PERSON
+    
+    # ---- Contact / Communication ----
+    EMAIL: EMAIL_ADDRESS
+    PHONE: PHONE_NUMBER
+
+    # ---- Address / Location ----
+    # NOTE: LOCATION entities commented out to avoid false positives (e.g., "US" as pronoun)
+    # We rely on custom recognizers for ADDRESS and UK_POSTCODE detection
+    # FAC: LOCATION
+    # GPE: LOCATION
+    # LOC: LOCATION
+    ADDRESS: ADDRESS
+    STREET_ADDRESS: ADDRESS
+    STREET_NAME: ADDRESS
+    HOUSE_NUMBER: HOUSE_NUMBER
+    POSTCODE: UK_POSTCODE
+    POSTAL_CODE: UK_POSTCODE
+
+    # ---- Credentials / Codes ----
+    PASSWORD: PASSWORD
+    VERIFICATION_CODE: VERIFICATION_CODE
+    PASSCODE: PASSWORD
+
+    # ---- Other Entities ----
+    AGE: AGE
+
+  low_confidence_score_multiplier: 0.4
+
+  low_score_entity_names:
+    -  # Empty list for now (future low-confidence entities can go here)
+
+  labels_to_ignore:
+    # Ignored to reduce false positives or low-value extractions
+    - CARDINAL
+    - EVENT
+    - LANGUAGE
+    - LAW
+    - ORDINAL
+    - PERCENT
+    - PRODUCT
+    - QUANTITY
+    - WORK_OF_ART
+    - NUMBERS
+    - NUMBER
+    - DATE
+    - TIME
+    - MONEY
+    - ORG
+
+# ============================================================================
+# DENY LIST - Comprehensive false positive prevention
+# ============================================================================
+# This single list serves two purposes:
+#   1. EXACT MATCH: Never redact if detected text exactly matches these words
+#   2. VALIDATION: For PERSON entities, validate using conversational ratio
+#
+# Words are grouped logically for maintainability
+# ============================================================================
+
 deny_list:
-  - THE
-  - AND
-  - THAT
-  - WITH
-  - FROM
-  - HAVE
-  - THIS
-  - WILL
-  - YOUR
-  - ABOUT
-  - JUST
-  - BEEN
-  - WHAT
-  - THERE
-  - CAN
-  - OUT
-  - OTHER
-  - WERE
-  - ALL
-  - THEIR
-  - WHEN
-  - MAKE
-  - LIKE
-  - TIME
-  - NO
-  - IF
-  - SO
-  - HIM
-  - TWO
-  - MORE
-  - WRITE
-  - SEE
-  - NUMBER
-  - WAY
-  - COULD
-  - PEOPLE
-  - MY
-  - THAN
-  - FIRST
-  - WATER
-  - BEEN
-  - CALL
-  - WHO
-  - OIL
-  - ITS
-  - NOW
-  - FIND
-  - LONG
-  - DOWN
-  - DAY
-  - DID
-  - GET
-  - COME
-  - MADE
-  - MAY
-  - PART
-  - OVER
-  - NEW
-  - SOUND
-  - TAKE
-  - ONLY
-  - LITTLE
-  - WORK
-  - KNOW
-  - PLACE
-  - YEAR
-  - LIVE
-  - ME
-  - BACK
-  - GIVE
-  - MOST
-  - VERY
-  - AFTER
-  - THING
-  - OUR
-  - JUST
-  - NAME
-  - GOOD
-  - SENTENCE
-  - MAN
-  - THINK
-  - SAY
-  - GREAT
-  - WHERE
-  - HELP
-  - THROUGH
-  - MUCH
-  - BEFORE
-  - LINE
-  - RIGHT
-  - TOO
-  - MEAN
-  - OLD
-  - ANY
-  - SAME
-  - TELL
-  - BOY
-  - FOLLOW
-  - CAME
-  - WANT
-  - SHOW
-  - ALSO
-  - AROUND
-  - FORM
-  - THREE
-  - SMALL
-  - SET
-  - PUT
-  - END
-  - DOES
-  - ANOTHER
-  - WELL
-  - LARGE
-  - MUST
-  - BIG
-  - EVEN
-  - SUCH
-  - BECAUSE
-  - TURN
-  - HERE
-  - WHY
-  - ASK
-  - WENT
-  - MEN
-  - READ
-  - NEED
-  - LAND
-  - DIFFERENT
-  - HOME
-  - US
-  - MOVE
-  - TRY
-  - KIND
-  - HAND
-  - PICTURE
-  - AGAIN
-  - CHANGE
-  - OFF
-  - PLAY
-  - SPELL
-  - AIR
-  - AWAY
-  - ANIMAL
-  - HOUSE
-  - POINT
-  - PAGE
-  - LETTER
-  - MOTHER
-  - ANSWER
-  - FOUND
-  - STUDY
-  - STILL
-  - LEARN
-  - SHOULD
-  - AMERICA
-  - WORLD
-  - HIGH
-  - EVERY
-  - NEAR
-  - ADD
-  - FOOD
-  - BETWEEN
-  - OWN
-  - BELOW
-  - COUNTRY
-  - PLANT
-  - LAST
-  - SCHOOL
-  - FATHER
-  - KEEP
-  - TREE
-  - NEVER
-  - START
-  - CITY
-  - EARTH
-  - EYE
-  - LIGHT
-  - THOUGHT
-  - HEAD
-  - UNDER
-  - STORY
-  - SAW
-  - LEFT
-  - DON'T
-  - FEW
-  - WHILE
-  - ALONG
-  - MIGHT
-  - CLOSE
-  - SOMETHING
-  - SEEM
-  - NEXT
-  - HARD
-  - OPEN
-  - EXAMPLE
-  - BEGIN
-  - LIFE
-  - ALWAYS
-  - THOSE
-  - BOTH
-  - PAPER
-  - TOGETHER
-  - GOT
-  - GROUP
-  - OFTEN
-  - RUN
+  # === Pronouns & Possessives ===
+  - "I"
+  - "I'M"
+  - "IM"
+  - "I'VE"
+  - "IVE"
+  - "I'LL"
+  - "ILL"
+  - "MY"
+  - "ME"
+  - "YOU"
+  - "YOUR"
+  - "YOU'RE"
+  - "YOURE"
+  - "YOU'LL"
+  - "YOULL"
+  - "YOU'VE"
+  - "YOUVE"
+  - "HE"
+  - "HE'S"
+  - "HES"
+  - "SHE"
+  - "SHE'S"
+  - "SHES"
+  - "WE"
+  - "WE'RE"
+  - "WERE"
+  - "WE'VE"
+  - "WEVE"
+  - "WE'LL"
+  - "WELL"
+  - "THEY"
+  - "THEY'RE"
+  - "THEYRE"
+  - "THEY'VE"
+  - "THEYVE"
+  - "IT"
+  - "IT'S"
+  - "ITS"
+  - "US"
+  
+  # === Common Articles & Conjunctions ===
+  - "THE"
+  - "A"
+  - "AN"
+  - "AND"
+  - "BUT"
+  - "OR"
+  - "FOR"
+  - "NOR"
+  - "SO"
+  - "YET"
+  - "AS"
+  - "IF"
+  - "THEN"
+  
+  # === Prepositions ===
+  - "TO"
+  - "OF"
+  - "IN"
+  - "ON"
+  - "AT"
+  - "BY"
+  - "WITH"
+  - "FROM"
+  - "ABOUT"
+  
+  # === Common Verbs ===
+  - "IS"
+  - "ARE"
+  - "WAS"
+  - "WERE"
+  - "BE"
+  - "BEEN"
+  - "BEING"
+  - "AM"
+  - "HAVE"
+  - "HAS"
+  - "HAD"
+  - "DO"
+  - "DOES"
+  - "DID"
+  - "CAN"
+  - "CAN'T"
+  - "CANT"
+  - "COULD"
+  - "WOULD"
+  - "SHOULD"
+  - "WILL"
+  - "MUST"
+  - "MAY"
+  - "MIGHT"
+  - "GET"
+  - "GOT"
+  - "GIVE"
+  - "GAVE"
+  - "TAKE"
+  - "NEED"
+  - "WANT"
+  
+  # === Yes/No & Affirmatives ===
+  - "YES"
+  - "NO"
+  - "YEAH"
+  - "YEP"
+  - "OKAY"
+  - "OK"
+  - "SURE"
+  
+  # === Polite/Social Words ===
+  - "PLEASE"
+  - "THANK"
+  - "THANKS"
+  - "SORRY"
+  - "HELLO"
+  - "HI"
+  - "GOODBYE"
+  - "BYE"
+  
+  # === Question Words ===
+  - "WHAT"
+  - "WHERE"
+  - "WHEN"
+  - "WHO"
+  - "WHY"
+  - "HOW"
+  - "WHICH"
+  
+  # === Location/Direction Words ===
+  - "HERE"
+  - "THERE"
+  - "THIS"
+  - "THAT"
+  - "THESE"
+  - "THOSE"
+  - "NOW"
+  
+  # === Common Adjectives/Adverbs ===
+  - "NEW"
+  - "ONE"
+  - "JUST"
+  - "WELL"
+  - "BACK"
+  - "ELSE"
+  - "RIGHT"
+  - "NOT"
+  - "COMPLETELY"
+  - "TOTALLY"
+  - "REALLY"
+  - "VERY"
+  - "QUITE"
+  - "ALWAYS"
+  - "NEVER"
+  - "MAYBE"
+  - "PERHAPS"
+  - "CERTAINLY"
+  - "DEFINITELY"
+  - "ABSOLUTELY"
+  
+  # === Conversational/Filler Words ===
+  - "UH"
+  - "UM"
+  - "GOODNESS"
+  - "SAKE"
+  - "WAIT"
+  - "LISTEN"
+  - "LOOK"
+  
+  # === Communication Verbs ===
+  - "CALL"
+  - "RING"
+  - "SPEAK"
+  - "TALK"
+  - "TELL"
+  - "SAY"
+  - "SAID"
+  - "HEAR"
+  - "HEARD"
+  - "ASK"
+  - "ASKED"
+  
+  # === Service/Business Words ===
+  - "HELP"
+  - "ACCEPT"
+  - "KNOW"
+  - "TOLD"
+  - "ENGINEER"
+  - "SKY"
+  - "BUSINESS"
+  - "SERVICE"
+  - "CUSTOMER"
+  
+  # === Device/Technology Words ===
+  - "TABLET"
+  - "PHONE"
+  - "MOBILE"
+  - "COMPUTER"
+  - "LAPTOP"
+  - "DEVICE"
+  
+  # === Password Context (for password recognizer) ===
+  - "PASSWORD"
+  - "WRITTEN"
+  - "DOWN"
+  - "SOMEWHERE"
+  - "CHECK"
+  - "LET"
 
-# Number words used in spoken language (e.g., "ZERO ONE TWO THREE...")
-# Shared across all recognizers for context tracking
+# ============================================================================
+# VALIDATION SETTINGS
+# ============================================================================
+validation:
+  person_entity:
+    # For PERSON entities from SpacyRecognizer (not in stateful context):
+    # Calculate ratio of conversational words in detected text
+    # Reject if ratio exceeds this threshold
+    max_conversational_ratio: 0.5  # 50% - tune this based on false positives
+    enabled: true
+
+# ============================================================================
+# DETECTION SCORE SETTINGS
+# ============================================================================
+# Simple scoring: All custom analyzers use 0.85 (hardcoded in Python)
+# Only parameterize the minimum threshold for redaction filtering
+# ============================================================================
+detection_scores:
+  # Minimum score threshold - redact if detection score is >= this value
+  min_score_threshold: 0.7
+
+# ============================================================================
+# SPOKEN NUMBER WORDS
+# ============================================================================
+# Comprehensive list of spoken number words used across all recognizers
+# Includes standard numbers (0-100) and phone-specific words (OH, DOUBLE, TRIPLE)
+# ============================================================================
 number_words:
   - ZERO
   - ONE
@@ -251,52 +339,69 @@ number_words:
   - EIGHTY
   - NINETY
   - HUNDRED
+  - OH        # Phone numbers: "OH SEVEN" = 07
+  - DOUBLE    # Phone numbers: "DOUBLE SEVEN" = 77
+  - TRIPLE    # Phone numbers: "TRIPLE FIVE" = 555
 
-# Common filler words to skip in address/postcode detection
-# Helps avoid detecting "UM FOUR FIVE" as part of address
+# ============================================================================
+# FILLER WORDS
+# ============================================================================
+# Common filler words used in address, postcode, and name recognizers
+# These words are skipped when extracting PII but are not filtered as false positives
+# ============================================================================
 filler_words:
-  - UM
-  - UH
-  - ER
-  - AH
-  - LIKE
-  - YOU KNOW
-  - WELL
-  - SO
-  - BASICALLY
-  - ACTUALLY
-  - LITERALLY
-  - OKAY
-  - RIGHT
+  - "YES"
   - YEAH
-  - YES
-  - NO
-  - SURE
-  - ALRIGHT
+  - SO
+  - IT
+  - ITS
+  - IT'S
+  - IS
+  - THE
+  - MY
+  - AND
+  - A
+  - AN
 
-# Words that typically follow names in introductions
-# Used to detect name boundaries (e.g., "JOHN SMITH HERE")
+# ============================================================================
+# NAME BOUNDARY WORDS
+# ============================================================================
+# Words that typically follow a name in agent self-introductions
+# Used to detect the end of a name in patterns like "MY NAME IS JOHN HOW CAN I HELP"
+# Format: Regex alternation pattern
+# ============================================================================
 name_boundaries:
-  - HERE
-  - CALLING
-  - SPEAKING
+  - I'M
+  - IM
+  - YOU'RE
+  - YOURE
+  - HOW
+  - CAN
+  - WILL
+  - AND
+  - THE
+  - IS
+  - ARE
   - FROM
   - AT
+  - WHO
+  - WHAT
+  - WHERE
+  - WHEN
+  - WHY
   - WITH
-  - AND
+  - TO
   - FOR
-
-# Validation settings for entity detection
-validation:
-  person_entity:
-    enabled: true
-    max_conversational_ratio: 0.5  # Max ratio of conversational words in detected text
-    # If > 50% of words in PERSON detection are conversational words, likely false positive
-    # Example: "YOU'RE CAN'T" = 100% conversational → rejected
-    #          "JOHN SMITH PLEASE" = 33% conversational → accepted
-
-# Detection score settings
-# Used to filter low-confidence detections
-detection_scores:
-  min_score_threshold: 0.7  # Minimum confidence score for entity detection
-  # Detections with score <= 0.7 will be filtered out to reduce false positives
+  - IN
+  - "ON"
+  - SPEAKING
+  - HERE
+  - CALLING
+  - TODAY
+  - HELP
+  - ASSIST
+  - GOOD
+  - GREAT
+  - NICE
+  - THANK
+  - THANKS
