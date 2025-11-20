@@ -1,0 +1,59 @@
+{
+  "name": "PII Redaction Flex Template",
+  "description": "Dataflow Flex Template for redacting PII from call transcripts using Presidio and custom entity recognizers",
+  "parameters": [
+    {
+      "name": "config_path",
+      "label": "Configuration File Path",
+      "helpText": "Path to the JSON configuration file (e.g., config/config_dev.json or config/config_prod.json)",
+      "isOptional": false,
+      "regexes": [
+        "^.+\\.json$"
+      ],
+      "paramType": "TEXT"
+    },
+    {
+      "name": "runner",
+      "label": "Pipeline Runner",
+      "helpText": "Pipeline runner type: DirectRunner for local testing, DataflowRunner for production",
+      "isOptional": true,
+      "regexes": [
+        "^(DirectRunner|DataflowRunner)$"
+      ],
+      "paramType": "TEXT"
+    },
+    {
+      "name": "log_level",
+      "label": "Logging Level",
+      "helpText": "Logging verbosity level: DEBUG, INFO, WARNING, ERROR, CRITICAL",
+      "isOptional": true,
+      "regexes": [
+        "^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$"
+      ],
+      "paramType": "TEXT"
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "mainClass": "main",
+    "pythonVersion": "3.9",
+    "dependencies": [
+      "apache-beam[gcp]==2.61.0",
+      "presidio-analyzer==2.2.359",
+      "presidio-anonymizer==2.2.359",
+      "spacy==3.7.2",
+      "en_core_web_lg==3.7.1"
+    ],
+    "features": [
+      "Stateful PII detection with conversation context tracking",
+      "9 custom entity recognizers (Reference Number, Bank Digits, Card Digits, Name, Address, Postcode, Email, Password, Phone Number)",
+      "Presidio framework with spaCy NLP model (en_core_web_lg)",
+      "BigQuery I/O with batch processing",
+      "Configurable deny lists and detection thresholds",
+      "Comprehensive audit trail with entity logging"
+    ]
+  },
+  "sdk_info": {
+    "language": "PYTHON"
+  }
+}

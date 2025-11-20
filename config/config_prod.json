@@ -1,11 +1,11 @@
 {
   "project": {
-    "bigquery_project_id": "skyuk-uk-reg-expmnt-prod",
-    "dataflow_project_id": "skyuk-uk-reg-expmnt-prod",
+    "bigquery_project_id": "skyuk-uk-reg-expmnt-dev",
+    "dataflow_project_id": "skyuk-uk-reg-expmnt-dev",
     "region": "europe-west1",
-    "staging_location": "gs://skyuk-uk-poc-verint-transc-genai-prod/staging",
+    "staging_location": "gs://dataflow-staging-europe-west1-181982885154/staging",
     "temp_bigquery_dataset" : "dataflow_temp_dataset",
-    "subnetwork": "<>",
+    "subnetwork": "https://www.googleapis.com/compute/v1/projects/skyuk-uk-shr-vpc-sc-ingt-dev/regions/europe-west1/subnetworks/sn-ds-ew1-ingt-dev-01-private",
     "job_name": "call-transcript-redaction-job",
     "service_account_email": "service-181982885154@gcp-sa-cloudbuild.iam.gserviceaccount.com"
   },
@@ -64,7 +64,8 @@
   },
   "dataflow": {
     "experiments": ["enable_bq_storage_api", "use_runner_v2"],
-    "write_method": "STREAMING_INSERTS"
+    "write_method": "STREAMING_INSERTS",
+    "dataflow_service_options": ["enable_preflight_validation=false"]
   },
   "context_indicators": {
     "reference_number": [

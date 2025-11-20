@@ -125,7 +125,7 @@ class EntityRecognizerPIITransform(beam.DoFn):
                 "new_value": replacement
             })
 
-        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "redactConfig.yaml")
+        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "redactConfig.yaml")
         provider = NlpEngineProvider(conf_file=config_path)
 
         self.analyzer = AnalyzerEngine(nlp_engine=provider.create_engine())
@@ -460,7 +460,7 @@ def run(argv=None):
         print(f"Using service account: {config['project']['service_account_email']}")
     
     # Add setup file for custom modules and dependencies
-    setup_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "setup.py")
+    setup_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "config", "setup.py")
     if os.path.exists(setup_file):
         pipeline_args.append(f'--setup_file={setup_file}')
         print(f"Using setup file: {setup_file}")

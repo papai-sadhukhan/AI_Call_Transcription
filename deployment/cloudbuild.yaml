@@ -1,0 +1,46 @@
+steps:
+  # Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--tag=europe-west1-docker.pkg.dev/skyuk-uk-reg-expmnt-dev/shared-redaction-app/pii-redaction-flex-template:latest'
+      - '--file=deployment/Dockerfile'
+      - '.'
+
+  # Push Docker image to Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'europe-west1-docker.pkg.dev/skyuk-uk-reg-expmnt-dev/shared-redaction-app/pii-redaction-flex-template:latest'
+
+  # Create Flex Template spec file in GCS
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    args:
+      - 'gcloud'
+      - 'dataflow'
+      - 'flex-template'
+      - 'build'
+      - 'gs://dataflow-staging-europe-west1-181982885154/templates/pii-redaction-flex-template.json'
+      - '--image=europe-west1-docker.pkg.dev/skyuk-uk-reg-expmnt-dev/shared-redaction-app/pii-redaction-flex-template:latest'
+      - '--sdk-language=PYTHON'
+      - '--metadata-file=deployment/metadata.json'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  serviceAccount: '181982885154-compute@developer.gserviceaccount.com'
+
+# Cloud Build will use the default logs bucket for this project
+# Ensure the service account has permissions to:
+# - Read/write to Artifact Registry (shared-redaction-app)
+# - Write to GCS bucket (dataflow-staging-europe-west1-181982885154)
+# - Create Dataflow Flex Templates
+
+# Note: Cloud Build automatically uses the project's Cloud Build service account
+# which already has necessary permissions for building and pushing images
+
+# To run this build:
+# gcloud builds submit --config=deployment/cloudbuild.yaml --gcs-source-staging-dir=gs://dataflow-staging-europe-west1-181982885154/source
+
+# Expected output:
+# - Docker image: europe-west1-docker.pkg.dev/skyuk-uk-reg-expmnt-dev/shared-redaction-app/pii-redaction-flex-template:latest
+# - Template spec: gs://dataflow-staging-europe-west1-181982885154/templates/pii-redaction-flex-template.json

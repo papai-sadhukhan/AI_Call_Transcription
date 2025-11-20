@@ -1,838 +1,512 @@
-# Local Development Guide
+# Call Transcript PII Redaction Pipeline
 
-## Usage Examples
-
-
-### Run with BigQuery (dev/prod config)
-You must now specify the config file using `--config_path`:
-
-**For development:**
-```bash
-python main.py --config_path config_dev.json --runner DataflowRunner
-```
-
-**For production:**
-```bash
-python main.py --config_path config_prod.json --runner DataflowRunner
-```
-
-The pipeline reads from the configured BigQuery table in the selected config file.
+Dataflow pipeline for redacting Personally Identifiable Information (PII) from call transcripts using Microsoft Presidio, spaCy NLP, and custom context-aware entity recognizers.
 
 ## Overview
-This folder contains the PII redaction pipeline configured for local development and testing. It's essentially the same as the main production pipeline but with updated table names and the ability to run locally using DirectRunner.
 
-## Quick Start
+This pipeline processes conversation transcripts from BigQuery, detects and redacts 20+ types of PII entities, and writes the anonymized transcripts back to BigQuery. It uses a stateful approach with conversation context tracking to improve accuracy, particularly for multi-turn conversations where sensitive information spans multiple exchanges between agent and customer.
 
-Install latest Presidio:
-pip install --upgrade git+https://github.com/microsoft/presidio.git#subdirectory=presidio-analyzer
-pip install --upgrade git+https://github.com/microsoft/presidio.git#subdirectory=presidio-anonymizer
+### Key Features
 
+- **Stateful PII Detection**: 9 custom entity recognizers with conversation context tracking
+- **Microsoft Presidio Framework**: Industry-standard PII detection and anonymization  
+- **spaCy NLP Model**: `en_core_web_lg` (738 MB) for advanced language understanding
+- **False Positive Filtering**: Configurable deny lists and conversational word validation
+- **BigQuery I/O**: Batch processing with configurable limits and streaming inserts
+- **Flex Template Deployment**: Cloud Build-based CI/CD with Artifact Registry
 
-### 1. Setup Environment
-```bash
-# Navigate to the local_run directory
-cd local_run
+### Supported PII Entities
 
-# Create virtual environment
-python -m venv venv
+| Entity Type | Example | Redaction Placeholder |
+|------------|---------|----------------------|
+| PERSON | "John Smith" | [REDACTED NAME] |
+| EMAIL_ADDRESS | "user@example.com" | [REDACTED EMAIL] |
+| PHONE_NUMBER | "07123456789" | [REDACTED PHONE] |
+| UK_POSTCODE | "SW1A 1AA" | [REDACTED POSTCODE] |
+| ADDRESS | "123 Main Street" | [REDACTED ADDRESS] |
+| CREDIT_CARD | "4111111111111111" | [REDACTED CARD] |
+| ACCOUNT_NUMBER | "12345678" | [REDACTED ACCOUNT] |
+| PASSWORD | Security codes/PINs | [REDACTED PASSWORD] |
+| REFERENCE_NUMBER | Order/ticket numbers | [REDACTED REFERENCE] |
+| BANK_ACCOUNT_LAST_DIGITS | "...12" | [REDACTED ACCOUNT DIGITS] |
+| FINANCIAL_AMOUNT | "£149.99" | [REDACTED AMOUNT] |
+| AGE | "35 years old" | [REDACTED AGE] |
+| LOCATION | City/region names | [REDACTED LOCATION] |
+| And 7 more... | | |
 
-# Activate virtual environment
-# Windows:
-venv\Scripts\activate
-# macOS/Linux:
-source venv/bin/activate
+## Project Structure
 
-# Install dependencies
-pip install -r requirements.txt
-
-# Download spaCy model
-python -m spacy download en_core_web_lg
+```
+skydata-genai-tf/
+├── config/                          # Configuration files
+│   ├── config_dev.json             # Dev environment config (100 record limit)
+│   ├── config_prod.json            # Prod environment config (full dataset)
+│   ├── redactConfig.yaml           # PII detection rules (deny list, scores, word lists)
+│   └── setup.py                    # Python package setup for Dataflow workers
+│
+├── deployment/                      # Deployment artifacts
+│   ├── Dockerfile                  # Container definition for Flex Template
+│   ├── .dockerignore               # Docker build exclusions
+│   ├── cloudbuild.yaml             # Cloud Build configuration
+│   ├── metadata.json               # Flex Template parameter definitions
+│   ├── build_template.sh           # Build and deploy template script
+│   └── run_template.sh             # Run Dataflow job script
+│
+├── utils/                           # Custom PII recognizers
+│   ├── __init__.py
+│   ├── entity_recognizers.py      # 9 stateful recognizers + context tracker
+│   └── logging_config.py          # Logging configuration
+│
+├── main.py                         # Apache Beam pipeline entry point
+├── requirements.txt                # Python dependencies
+├── README.md                       # This file
+└── .gitignore                      # Git exclusions
 ```
 
+## Environment Setup
 
-### 2. Run Local Pipeline
+### Prerequisites
+
+- **Google Cloud Project**: `skyuk-uk-reg-expmnt-dev`
+- **Region**: `europe-west1`
+- **Required APIs**: Dataflow, Cloud Build, Artifact Registry, BigQuery
+- **Service Accounts**:
+  - `redaction-tf-df@skyuk-uk-reg-expmnt-dev.iam.gserviceaccount.com` (Dataflow runner)
+  - `181982885154-compute@developer.gserviceaccount.com` (Cloud Build)
+- **Artifact Registry**: `shared-redaction-app` (Docker repository)
+- **GCS Bucket**: `gs://dataflow-staging-europe-west1-181982885154`
+
+### Local Development Setup
+
+1. **Clone Repository**
+   ```bash
+   git clone <repository-url>
+   cd skydata-genai-tf
+   ```
+
+2. **Authenticate with GCP**
+   ```bash
+   gcloud auth login
+   gcloud config set project skyuk-uk-reg-expmnt-dev
+   ```
+
+3. **Install Python Dependencies**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   python -m spacy download en_core_web_lg
+   ```
+
+4. **Verify Configuration**
+   ```bash
+   # Check Artifact Registry access
+   gcloud artifacts repositories describe shared-redaction-app \
+     --location=europe-west1
+   
+   # Check BigQuery tables
+   bq show skyuk-uk-reg-expmnt-dev:uk_call_transcript_exprmnt.td_call_redaction_p1
+   ```
+
+## Running the Pipeline
+
+### Option 1: Production Deployment (Dataflow + Flex Template)
+
+This is the **recommended approach** for production workloads.
+
+#### Step 1: Build Flex Template
+
 ```bash
-python main.py --config_path config_dev.json --runner DirectRunner
+# Builds Docker image, pushes to Artifact Registry, creates template spec
+./deployment/build_template.sh
 ```
-Run Local Pipeline - Prod
+
+**What happens:**
+- Cloud Build builds container with all dependencies (including 738 MB spaCy model)
+- Image pushed to `europe-west1-docker.pkg.dev/skyuk-uk-reg-expmnt-dev/shared-redaction-app/pii-redaction-flex-template:latest`
+- Template spec created at `gs://dataflow-staging-europe-west1-181982885154/templates/pii-redaction-flex-template.json`
+
+#### Step 2: Run Dataflow Job
+
+**Development (100 records):**
 ```bash
-python main.py --config_path config_prod.json --runner DirectRunner
+./deployment/run_template.sh dev
 ```
 
-## Files in This Directory
+**Production (full dataset):**
+```bash
+./deployment/run_template.sh prod
+```
 
-### `main.py`
-- **Purpose**: Configurable pipeline for conversation transcript redaction
-- **Key Features**:
-  - Configuration-driven (uses `config.json`)
-  - Handles conversation transcript format with role/content structure
-  - Command-line runner selection (DirectRunner/DataflowRunner)
-  - Same PII detection logic as production
-  - Flexible table and column mapping
+**Monitoring:**
+```bash
+# View job in console
+gcloud dataflow jobs list --region=europe-west1
 
-### `config.json`
-- **Purpose**: Central configuration file for all pipeline settings
-- **Contains**:
-  - Project and dataset configurations
-  - Table names and column mappings
-  - PII entity replacement rules
-  - Processing parameters (limits, batch sizes)
-  - Dataflow execution settings
+# Stream logs
+gcloud dataflow jobs logs <JOB_ID> --region=europe-west1
+```
 
-### `requirements.txt`
-- **Purpose**: All dependencies needed for local development
-- **Includes**:
-  - Apache Beam
-  - Presidio libraries
-  - spaCy
-  - Development tools
+### Option 2: Local Testing (DirectRunner)
 
-### `README.md`
-- **Purpose**: This documentation file
+For development and debugging, run the pipeline locally:
+
+```bash
+python main.py \
+  --config_path=config/config_dev.json \
+  --runner=DirectRunner \
+  --log_level=DEBUG
+```
+
+**Note:** DirectRunner downloads data locally and processes in-memory. Not suitable for large datasets (use `limit: 100` in config).
+
+### Option 3: Direct Dataflow Submission (No Template)
+
+Submit job directly to Dataflow without building a template:
+
+```bash
+python main.py \
+  --config_path=config/config_prod.json \
+  --runner=DataflowRunner \
+  --project=skyuk-uk-reg-expmnt-dev \
+  --region=europe-west1 \
+  --staging_location=gs://dataflow-staging-europe-west1-181982885154/staging \
+  --temp_location=gs://dataflow-staging-europe-west1-181982885154/temp \
+  --service_account_email=redaction-tf-df@skyuk-uk-reg-expmnt-dev.iam.gserviceaccount.com
+```
+
+## Configuration Guide
+
+### Environment Configs (`config/config_dev.json` / `config/config_prod.json`)
+
+```json
+{
+  "project": {
+    "bigquery_project_id": "skyuk-uk-reg-expmnt-dev",
+    "dataflow_project_id": "skyuk-uk-reg-expmnt-dev",
+    "region": "europe-west1",
+    "staging_location": "gs://...",
+    "service_account_email": "..."
+  },
+  "dataset": {
+    "input": "uk_call_transcript_exprmnt",  // or "cdn10" for prod
+    "output": "uk_call_transcript_exprmnt"
+  },
+  "tables": {
+    "source": {
+      "name": "td_call_redaction_p1",
+      "columns": {
+        "transaction_id": "transaction_id",
+        "input_transcript": "transcription"
+      }
+    },
+    "target": {
+      "name": "td_call_redaction_p2"
+    }
+  },
+  "processing": {
+    "limit": 100,  // Dev: 100, Prod: 999999999
+    "batch_size": 300,
+    "condition": "1=1"
+  },
+  "pii_entities": {
+    "PERSON": "[REDACTED NAME]",
+    "EMAIL_ADDRESS": "[REDACTED EMAIL]",
+    // ... 18 more entity types
+  },
+  "context_indicators": {
+    "name": ["NAME", "CALLED", "SURNAME"],
+    "address": ["ADDRESS", "FIRST LINE", "FLAT"],
+    "postcode": ["POSTCODE", "POSTAL CODE"],
+    // ... 7 more indicator groups
+  }
+}
+```
+
+**Key Configuration Options:**
+
+- **`limit`**: Number of records to process (100 for dev, 999999999 for prod)
+- **`batch_size`**: BigQuery write batch size (300 recommended)
+- **`service_account_email`**: Dataflow runner identity
+- **`context_indicators`**: Keywords that trigger context-aware detection
+
+### PII Detection Config (`config/redactConfig.yaml`)
+
+```yaml
+# spaCy model configuration
+nlp_engine_name: spacy
+models:
+  - lang_code: en
+    model_name: en_core_web_lg
+
+# Deny list - words NOT to redact (179 common conversational words)
+deny_list:
+  - THE
+  - AND
+  - YOUR
+  # ... 176 more
+
+# Number words for spoken digit detection
+number_words:
+  - ZERO
+  - ONE
+  - TWO
+  # ... 27 more
+
+# Validation settings
+validation:
+  person_entity:
+    enabled: true
+    max_conversational_ratio: 0.5  # Reject if >50% conversational words
+
+# Detection score thresholds
+detection_scores:
+  min_score_threshold: 0.7  # Minimum confidence score
+```
+
+**Configuration Purposes:**
+
+- **`deny_list`**: Prevents false positives (e.g., "YOU'RE CAN'T" detected as PERSON)
+- **`number_words`**: Recognizes spelled-out numbers ("ONE TWO THREE" → digits)
+- **`validation`**: Smart filtering for default recognizer outputs
+- **`detection_scores`**: Confidence threshold for entity detection
 
 ## PII Detection Logic
 
-### Recent Improvements (Nov 2024)
+### Architecture: Stateful Entity Recognition
 
-**Simplified Address & Postcode Recognition:**
-- **Problem Solved**: Previous complex patterns failed on mixed responses like "BETTER C FOUR SIX WEDNESDAY BILL HD TWO FIVE C F" (name + address + postcode in one response)
-- **New Approach**: Context-based detection with simple pattern matching
-  - When agent asks for address/postcode → redact ANY alphanumeric content
-  - No complex pattern validation needed
-  - Handles spoken numbers and letters naturally
-- **Benefits**: 
-  - Works with mixed responses (name+address+postcode together)
-  - Handles any spoken format (letters, numbers, words)
-  - Much simpler logic = fewer edge cases = more reliable
+The pipeline uses a **stateful approach** with conversation context tracking:
 
-**Short Password Support:**
-- **Updated**: Minimum password length reduced from 6 to 2 characters
-- **Reason**: Support short passwords like "O B", "A 1", etc.
-- **Impact**: Now detects and redacts all password formats including very short ones
+1. **ConversationContextTracker**: Maintains state across conversation turns
+   - Tracks last agent utterance
+   - Sets expectation flags (expecting_name, expecting_address, etc.)
+   - Provides context to all recognizers
 
-### Detection Strategy: **Context-Based (Stateful)**
-All custom recognizers analyze conversation context to determine what type of PII is expected in the current response. This approach provides:
-- **Higher Accuracy**: Recognizes PII based on conversation flow
-- **Fewer False Positives**: Only looks for specific entities when contextually appropriate
-- **Better Handling of Spoken Format**: Designed for transcribed conversations with number words
-- **Simplified Logic**: Simple pattern matching when context is clear (address, postcode)
+2. **9 Custom Recognizers**: Each implements stateful detection logic
+   - `StatefulReferenceNumberRecognizer`: Order/ticket numbers after context indicators
+   - `StatefulBankDigitsRecognizer`: Last 2 digits of account numbers
+   - `StatefulCardDigitsRecognizer`: Last 4 digits of card numbers
+   - `StatefulNameRecognizer`: Names after "Can I have your name?" type prompts
+   - `StatefulAddressRecognizer`: Addresses including street indicators and postcodes
+   - `StatefulPostcodeRecognizer`: UK postcode patterns (e.g., "SW1A 1AA")
+   - `StatefulEmailRecognizer`: Email addresses after context indicators
+   - `StatefulPasswordRecognizer`: Security codes/passwords after prompts
+   - `StatefulPhoneNumberRecognizer`: Phone numbers after context indicators
 
-### Architecture
+3. **Default Presidio Recognizers**: Baseline NER models (SpacyRecognizer, etc.)
+   - Filtered by deny list and conversational ratio validation
+   - Catches PII missed by custom recognizers
 
+### Detection Flow Example
+
+**Conversation Turn:**
 ```
-ConversationContextTracker
-    ↓ (tracks conversation state)
-    ↓
-Custom Recognizers (9 stateful recognizers)
-    ↓ (detect context-specific PII)
-    ↓
-SpacyRecognizer (default NER for names)
-    ↓ (provides broad name detection)
-    ↓
-Deny List Filter (179 conversational words)
-    ↓ (removes false positives)
-    ↓
-Anonymizer Engine
-    ↓ (replaces detected PII)
-    ↓
-Redacted Output
+Agent: "Can I have your postcode please?"
+Customer: "SW1A 1AA"
 ```
 
-### Entity Detection Methods
-
-#### **1. REFERENCE_NUMBER** 
-**Recognizer:** `StatefulReferenceNumberRecognizer`  
-**Entity Type:** `REFERENCE_NUMBER`  
-**Replacement:** `[REDACTED REFERENCE]`
-
-**Detection Logic:**
-```python
-Context Required: Previous turn contains keywords like:
-  - "REFERENCE NUMBER", "REF NUMBER", "REFERENCE CODE"
-  - "BOOKING NUMBER", "ORDER NUMBER"
-
-Detection Pattern:
-  → Scan for sequences of 8+ consecutive number words or digits
-  → Example: "ONE NINE ONE TWO ONE TWO EIGHT NINE"
-  → Score: 0.95
-
-Edge Cases Handled:
-  - Mixed format: "19121289" or "ONE NINE 12 12 89"
-  - With separators: "ONE NINE DASH ONE TWO"
-```
-
-**Example:**
-```
-Agent: "CAN I HAVE YOUR REFERENCE NUMBER PLEASE"
-Customer: "YES IT'S ONE NINE ONE TWO ONE TWO EIGHT NINE"
-Result: "YES IT'S [REDACTED REFERENCE]"
-```
-
----
-
-#### **2. BANK_DIGITS** (Last 4 digits of account)
-**Recognizer:** `StatefulBankDigitsRecognizer`  
-**Entity Type:** `BANK_DIGITS`  
-**Replacement:** `[REDACTED ACCOUNT]`
-
-**Detection Logic:**
-```python
-Context Required: Previous turn contains keywords like:
-  - "LAST FOUR DIGIT", "FINAL 4 DIGIT"
-  - "LAST 4 NUMBER", "ENDING IN"
-  - "ACCOUNT NUMBER" + "LAST"
-
-Detection Pattern:
-  → Find exactly 4 consecutive number words or digits
-  → Example: "FIVE SIX SEVEN EIGHT"
-  → Score: 0.95
-
-Edge Cases Handled:
-  - Digit format: "5678"
-  - Mixed: "FIVE SIX 7 8"
-  - With filler words: "UM FIVE SIX SEVEN EIGHT" → extracts just "5678"
-```
-
-**Example:**
-```
-Agent: "WHAT ARE THE LAST FOUR DIGITS OF YOUR ACCOUNT"
-Customer: "FIVE SIX SEVEN EIGHT"
-Result: "[REDACTED ACCOUNT]"
-```
-
----
-
-#### **3. CARD_DIGITS** (Last 4 digits of card)
-**Recognizer:** `StatefulCardDigitsRecognizer`  
-**Entity Type:** `CARD_DIGITS`  
-**Replacement:** `[REDACTED CARD]`
-
-**Detection Logic:**
-```python
-Context Required: Previous turn contains keywords like:
-  - "CARD NUMBER", "DEBIT CARD", "CREDIT CARD"
-  - "LAST 4 DIGIT", "ENDING"
-
-Detection Pattern:
-  → Find exactly 4 consecutive number words or digits
-  → Example: "ONE TWO THREE FOUR"
-  → Score: 0.95
-
-Edge Cases Handled:
-  - Same as BANK_DIGITS but with card-specific context
-  - Distinguishes from bank account by keywords
-```
-
-**Example:**
-```
-Agent: "CAN I TAKE THE LAST FOUR DIGITS OF YOUR CARD"
-Customer: "ONE TWO THREE FOUR"
-Result: "[REDACTED CARD]"
-```
-
----
-
-#### **4. PERSON (Names)**
-**Recognizers:** `StatefulNameRecognizer` (Custom) + `SpacyRecognizer` (Default NER)  
-**Entity Type:** `PERSON`  
-**Replacement:** `[REDACTED NAME]`
-
-**Detection Logic:**
-```python
-StatefulNameRecognizer - Context-based patterns:
-
-Pattern 1: Spelled Names (3+ single letters)
-  → "G R A C E" → detected as name
-  → Score: 0.95
-  → Requires context: expecting_name=True
-
-Pattern 2: Spelled in context
-  → "MY NAME IS J O H N" → detects "J O H N"
-  → Looks for intro keywords + spelled letters
-  → Score: 0.95
-
-Pattern 3: Name after keywords
-  → "MY NAME IS ROSEMARY" → detects "ROSEMARY"
-  → "I'M CALLED ADRIAN" → detects "ADRIAN"
-  → Keywords: NAME IS, CALLED, SURNAME IS
-  → Score: 0.92
-
-Pattern 4: Agent self-introduction (UNCONDITIONAL)
-  → "MY NAME IS SHAUNA" → detects "SHAUNA"
-  → Works WITHOUT expecting_name context
-  → Specific pattern: "MY NAME IS/MY NAME'S [NAME]"
-  → Score: 0.98
-  → Note: Simplified to avoid false positives
-
-Pattern 5: Direct name response (DISABLED)
-  → Previous implementation caused false positives
-  → Matched common words like DOING, FINE, TRYING
-  → Now disabled - relies on SpacyRecognizer instead
-
-SpacyRecognizer - Broad NER detection:
-  → Uses spaCy en_core_web_lg model
-  → Detects PERSON entities in natural language
-  → Filtered by deny_list validation (see below)
-  → Score: varies based on spaCy confidence
-
-Validation & Filtering:
-  → deny_list: 179 conversational words
-  → For PERSON entities NOT from StatefulNameRecognizer:
-    - Calculate: conversational_ratio = (words in deny_list) / (total words)
-    - If ratio > 50% → filtered out (false positive)
-  → Examples filtered: "DOING", "FINE", "TALKING", "MY TABLET"
-```
-
-**Examples:**
-```
-Agent: "CAN I HAVE YOUR FULL NAME"
-Customer: "IT'S ADRIAN BEESTON"
-Result: "IT'S [REDACTED NAME]"
-
-Agent: "HOW DO YOU SPELL THAT"
-Customer: "A D R I A N"
-Result: "[REDACTED NAME]"
-
-Agent: "THANK YOU FOR CALLING MY NAME IS SHAUNA"
-Result: "THANK YOU FOR CALLING MY NAME IS [REDACTED NAME]"
-```
-
----
-
-#### **5. LOCATION (Address)**
-**Recognizer:** `StatefulAddressRecognizer`  
-**Entity Type:** `LOCATION`  
-**Replacement:** `[REDACTED LOCATION]`
-
-**Detection Logic:**
-```python
-SIMPLIFIED APPROACH:
-1. Check if agent asked for address (context keywords: ADDRESS, STREET, POSTCODE, etc.)
-2. If yes, redact ANY alphanumeric content in the response
-3. Skip only common filler words (YES, SO, IT, IT'S, IS, THE, MY, AND, A, AN)
-
-Strategy:
-  → When context expects address, look for ANY significant content
-  → Extract: alphanumeric words, single letters, number words
-  → If response has 2+ significant elements → redact as address
-  → Redacts from first to last significant word
-  → Score: 0.95
-
-Why Simple Works:
-  → Addresses are alphanumeric by nature
-  → After agent asks "what's your address", customer's response IS the address
-  → No need for complex pattern matching
-  → Handles mixed formats: "C FOUR SIX WEDNESDAY BILL"
-```
-
-**Examples:**
-```
-Agent: "WHAT'S YOUR ADDRESS"
-Customer: "IT'S TWO MILTON DRIVE"
-Result: "IT'S [REDACTED LOCATION]"
-
-Agent: "CAN I HAVE YOUR FULL NAME AND ADDRESS"
-Customer: "YES SO IT'S BETTER C FOUR SIX WEDNESDAY BILL"
-Result: "YES SO IT'S [REDACTED LOCATION]"
-(Note: Entire alphanumeric sequence including name is redacted)
-```
-
----
-
-#### **6. UK_POSTCODE**
-**Recognizer:** `StatefulPostcodeRecognizer`  
-**Entity Type:** `UK_POSTCODE`  
-**Replacement:** `[REDACTED POSTCODE]`
-
-**Detection Logic:**
-```python
-SIMPLIFIED APPROACH:
-1. Check if agent asked for postcode (context keywords: POSTCODE, POST CODE, etc.)
-2. If yes, redact ANY letters + numbers in the response
-3. Skip only common filler words (YES, SO, IT, IT'S, IS, THE, MY, AND, A, AN)
-
-Strategy:
-  → When context expects postcode, look for mix of letters and numbers
-  → Extract: letters (especially short ones), number words, digits
-  → If response has letters AND numbers → redact as postcode
-  → Minimum 2 significant elements required
-  → Redacts from first to last significant element
-  → Score: 0.95
-
-Why Simple Works:
-  → UK postcodes always contain both letters and numbers
-  → After agent asks "what's your postcode", customer's response IS the postcode
-  → No need to validate postcode format
-  → Handles spoken format: "HD TWO FIVE C F" or "ER SEVEN SIX Q T"
-
-Example Detection:
-  "HD TWO FIVE C F"
-  → Letters: [HD, C, F]
-  → Numbers: [TWO, FIVE]
-  → Both present → postcode detected
-```
-
-**Examples:**
-```
-Agent: "WHAT'S YOUR POSTCODE"
-Customer: "IT'S ER SEVEN SIX Q T"
-Result: "IT'S [REDACTED POSTCODE]"
-
-Agent: "AND YOUR POSTCODE"
-Customer: "HD TWO FIVE C F"
-Result: "[REDACTED POSTCODE]"
-```
-
----
-
-#### **7. EMAIL_ADDRESS**
-**Recognizer:** `StatefulEmailRecognizer`  
-**Entity Type:** `EMAIL_ADDRESS`  
-**Replacement:** `[REDACTED EMAIL]`
-
-**Detection Logic:**
-```python
-Context Required: Previous turn contains keywords like:
-  - "EMAIL", "E MAIL", "EMAIL ADDRESS"
-
-Detection Patterns:
-
-Pattern 1: Standard email format
-  → Contains: @ and DOT/. in domain
-  → Example: "john@example.com"
-  → Regex: [A-Z]+@[A-Z]+\\.+
-  → Score: 0.95
-
-Pattern 2: Spoken email (AT and DOT)
-  → Example: "JOHN AT EXAMPLE DOT COM"
-  → Example: "ADRIAN BEESTON THIRTEEN AT GMAIL DOT COM"
-  → Score: 0.95
-
-Note: Common spoken patterns in transcripts
-```
-
-**Example:**
-```
-Agent: "WHAT'S YOUR EMAIL ADDRESS"
-Customer: "IT'S ADRIAN BEESTON THIRTEEN AT GMAIL DOT COM"
-Result: "IT'S [REDACTED EMAIL]"
-```
-
----
-
-#### **8. PASSWORD**
-**Recognizer:** `StatefulPasswordRecognizer`  
-**Entity Type:** `PASSWORD`  
-**Replacement:** `[REDACTED PASSWORD]`
-
-**Detection Logic:**
-```python
-Context Required: Previous turn contains keywords like:
-  - "PASSWORD", "PASSCODE", "PIN"
-  - "SECURITY", "ACCESS CODE"
-
-Detection Strategy:
-  → Passwords are sequences of letters and numbers
-  → Look for consecutive:
-    - Single letters (A, B, C)
-    - Number words (ONE, TWO, THREE)
-    - Digits (1, 2, 3)
-  
-  → Filter out conversational words from deny_list
-  → Minimum sequence length: 2 elements (updated from 6)
-  → Score: 0.95
-  → Handles short passwords like "O B", "A 1", etc.
-
-Smart Parsing:
-  → Preserves conversational prefix/suffix
-  → Only redacts the password sequence itself
-  → Example: "IT IS WRITTEN DOWN HERE SOMEWHERE [PASSWORD]"
-              → "IT IS WRITTEN DOWN HERE SOMEWHERE [REDACTED PASSWORD]"
-
-Edge Cases:
-  → Handles mixed format: "A B C ONE TWO 3"
-  → Ignores filler words: "UM", "UH", "LIKE"
-  → Stops at conversational phrases
-```
-
-**Examples:**
-```
-Agent: "CAN YOU PROVIDE YOUR PASSWORD"
-Customer: "IT IS WRITTEN DOWN SOMEWHERE THREE THREE TWO C D C Q I J SEVEN SIX EIGHT E"
-Result: "IT IS WRITTEN DOWN SOMEWHERE [REDACTED PASSWORD]"
-
-Agent: "WHAT'S YOUR PASSWORD"
-Customer: "O B"
-Result: "[REDACTED PASSWORD]"
-(Note: Short passwords now supported with 2-character minimum)
-```
-
----
-
-#### **9. PHONE_NUMBER** ✨ NEW
-**Recognizer:** `StatefulPhoneNumberRecognizer`  
-**Entity Type:** `PHONE_NUMBER`  
-**Replacement:** `[REDACTED PHONE]`
-
-**Detection Logic:**
-```python
-Simple Pattern Matching - NO context required
-  → Detects sequences of 9+ consecutive number words
-  → Number words: ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN, EIGHT, NINE
-  → Special words: OH (=0), DOUBLE (XX), TRIPLE (XXX)
-
-Detection Patterns:
-
-Pattern 1: Spoken phone numbers
-  → Example: "ZERO DOUBLE SEVEN NINE FOUR FIVE OH FIVE EIGHT THREE SIX"
-  → Detects: 9+ consecutive number words
-  → Score: 0.95
-
-Pattern 2: Digit sequences
-  → Example: "07945058361"
-  → Detects: 10-11 consecutive digits starting with 0
-  → Score: 0.90
-
-Why Simple Pattern Works:
-  → Phone numbers are distinctive: 10-11 consecutive numbers
-  → Rarely occurs in normal conversation
-  → "DOUBLE" is unique to phone number context
-  → No false positives found in testing
-
-Note: This recognizer is UNCONDITIONAL
-  → Works without context indicators
-  → Always active throughout conversation
-```
-
-**Examples:**
-```
-Agent: "CAN I HAVE YOUR MOBILE NUMBER"
-Customer: "IS ZERO DOUBLE SEVEN NINE FOUR FIVE OH FIVE EIGHT THREE SIX"
-Result: "IS [REDACTED PHONE]"
-
-Customer: "MY NUMBER IS 07945058361"
-Result: "MY NUMBER IS [REDACTED PHONE]"
-```
-
----
+**Processing:**
+1. Agent turn analyzed → `context_tracker.expecting_postcode = True`
+2. Customer turn analyzed → `StatefulPostcodeRecognizer` detects "SW1A 1AA" (high confidence)
+3. Result filtered by score threshold (0.7)
+4. Anonymized: `Customer: "[REDACTED POSTCODE]"`
 
 ### False Positive Prevention
 
-**Multi-Layer Filtering Strategy:**
+**Problem:** Default NER models detect "YOU'RE CAN'T" as PERSON (false positive)
 
-#### **1. Deny List (redactConfig.yaml)**
-- **179 conversational words** organized by category:
-  - Modal verbs: CAN, COULD, SHOULD, WOULD, WILL, etc.
-  - Adverbs: JUST, VERY, REALLY, QUITE, ALWAYS, etc.
-  - Common words: THAT, THIS, WITH, FROM, LIKE, etc.
-  - Device names: TABLET, PHONE, DEVICE, LAPTOP, etc. (prevent "MY TABLET" → PERSON)
+**Solution:**
+1. **Deny List Matching**: Exact word matches in `deny_list` → skip
+2. **Conversational Ratio Validation**: If >50% of words are conversational → skip
+3. **Context-Based Filtering**: Only validate when NOT expecting a name
 
-#### **2. Dual-Purpose Filtering**
-
-**Exact Match Filter (main.py):**
+**Example:**
 ```python
-# Applied to ALL entities
-if matched_text in deny_list:
-    skip_detection()
-
-# Word-level check (for multi-word detections)
-if any(word in deny_list for word in matched_text.split()):
-    skip_detection()
-
-# Exception: Structured entities bypass this filter
-# (PHONE_NUMBER, EMAIL_ADDRESS, CREDIT_CARD, IBAN_CODE)
+# "YOU'RE CAN'T" detected by SpacyRecognizer
+matched_text = "YOU'RE CAN'T"
+conversational_ratio = 2/2 = 1.0  # 100% conversational
+if conversational_ratio > 0.5:
+    # Reject detection
 ```
 
-**Validation Filter (for PERSON entities):**
-```python
-# Only for PERSON entities from SpacyRecognizer
-if entity_type == "PERSON" and not from_custom_recognizer:
-    words = matched_text.split()
-    conversational_words = [w for w in words if w in deny_list]
-    ratio = len(conversational_words) / len(words)
-    
-    if ratio > 0.5:  # More than 50% conversational
-        reject_as_false_positive()
+## BigQuery Schema
+
+### Source Table (`td_call_redaction_p1`)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| transaction_id | STRING | Unique call identifier |
+| transaction_identifier | STRING | Alternative identifier |
+| file_date | DATE | Transcript date |
+| transcription | JSON | Conversation array: `[{"role":"agent","content":"..."}]` |
+
+### Target Table (`td_call_redaction_p2`)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| file_date | DATE | Transcript date |
+| transaction_id | STRING | Unique call identifier |
+| transcription_redacted | JSON | Redacted conversation array |
+| redacted_entity | STRING | Audit trail: detected entities with scores |
+| load_dt | TIMESTAMP | Processing timestamp |
+
+**Example `redacted_entity`:**
 ```
-
-#### **3. Context-Based Activation**
-- Most recognizers only activate when context indicates PII is expected
-- Reduces search space and false positive rate
-- Example: BANK_DIGITS only looks for 4 digits when agent asks for "last four digits"
-
-#### **4. Pattern Specificity**
-- Patterns designed to match PII structure, not general text
-- Example: UK_POSTCODE requires mix of letters AND numbers
-- Example: PASSWORD requires 6+ consecutive alphanumeric characters
-
-**False Positive Examples (Prevented):**
+[agent] PERSON: John Smith (score: 0.85); [customer] PHONE_NUMBER: 07123456789 (score: 0.95)
 ```
-❌ "DOING" detected as PERSON → Filtered (100% conversational)
-❌ "MY TABLET" detected as PERSON → Filtered (TABLET in deny_list)
-❌ "I AM FINE" detected as PERSON → Filtered (all words conversational)
-❌ "YOU'RE" detected as PERSON → Filtered (contraction in deny_list)
-✅ "ADRIAN" detected as PERSON → Kept (real name, context expecting name)
-✅ "SHAUNA" in "MY NAME IS SHAUNA" → Kept (agent intro pattern)
-```
-
-### Configuration Files
-
-**redactConfig.yaml:**
-- NLP engine settings (spaCy model: en_core_web_lg)
-- Entity mappings (spaCy NER → Presidio entities)
-- Deny list (158 words in 10+ categories)
-- Validation thresholds
-
-**config_dev.json / config_prod.json:**
-- BigQuery project/dataset/table settings
-- PII entity replacement values: `[REDACTED NAME]`, `[REDACTED POSTCODE]`, etc.
-- Context indicators: keywords that trigger each entity type detection
-- Processing limits and batch sizes
-
-## Configuration
-
-All settings are now managed through `config.json`:
-
-### Data Sources
-- **Source**: Configured in `config.json` under `tables.source`
-- **Target**: Configured in `config.json` under `tables.target`
-- **Project**: Configurable project ID and datasets
-
-### Table Structure
-
-**Input Table** (`td_verint_transcription_raw`):
-- `transaction_id`: Transaction identifier  
-- `transcription_file_dt`: Transcript file date/time
-- `conversation_transcript_json`: JSON array of conversation turns
-
-**Output Table** (`td_verint_transcription_redacted_temp`):
-- `transaction_id`: Transaction identifier (copied from input)
-- `transcription_file_dt`: Transcript file date/time (copied from input)  
-- `conversation_transcript_json`: JSON array with PII redacted using `#####`
-
-### Conversation Format
-The pipeline handles conversation transcripts with this structure:
-```json
-[
-  {"role":"agent","content":"THANK YOU FOR CALLING ABC YOU'RE SPEAKING WITH AGENT_X"},
-  {"role":"customer","content":"HELLO"},
-  {"role":"agent","content":"YES HELLO"}
-]
-```
-
-**After PII redaction:**
-```json
-[
-  {"role":"agent","content":"THANK YOU FOR CALLING ABC YOU'RE SPEAKING WITH #####"},
-  {"role":"customer","content":"HELLO"}, 
-  {"role":"agent","content":"YES HELLO"}
-]
-```
-
-## Usage Options
-
-
-### Local Execution (DirectRunner)
-```bash
-python main.py --config_path config_dev.json --runner DirectRunner
-```
-- Runs on your local machine
-- Good for testing and development
-- Processes smaller datasets efficiently
-- **Logs to**: `logs/app.log` (with automatic rotation at 10MB, keeps 5 backups)
-
-### Cloud Execution (DataflowRunner)
-```bash
-python main.py --config_path config_prod.json --runner DataflowRunner
-```
-- Runs on Google Cloud Dataflow
-- Scalable for large datasets
-- Requires Google Cloud authentication
-- **Logs to**: GCP Cloud Logging with label `application=entity-redaction-pipeline`
-
-### Logging Configuration
-
-The pipeline now supports proper logging with automatic configuration based on runner type:
-
-**Log Levels:**
-```bash
-# Set log level (default: INFO)
-python main.py --config_path config_dev.json --runner DirectRunner --log_level DEBUG
-```
-
-Available levels: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
-
-**Local Logging (DirectRunner):**
-- Logs written to `logs/app.log`
-- Automatic file rotation (10MB max, 5 backups)
-- Console output for real-time monitoring
-- Includes timestamps and log levels
-
-**GCP Cloud Logging (DataflowRunner):**
-- Logs sent to Google Cloud Logging
-- Searchable by label: `application=entity-redaction-pipeline`
-- Structured logging with metadata:
-  - `component=pii-anonymization`
-  - `environment=production`
-- View in GCP Console: Logging → Logs Explorer
-- Filter query: `labels.application="entity-redaction-pipeline"`
-
-**Debug Logging:**
-```bash
-# Enable detailed debug logs for troubleshooting
-python main.py --config_path config_dev.json --runner DirectRunner --log_level DEBUG
-```
-
-Debug logs include:
-- Context tracker state changes
-- Entity recognition decisions
-- Filter operations
-- Pattern matching details
-
-## Usage Examples
-
-
-### Run with BigQuery
-```bash
-python main.py --config_path config_dev.json --runner DirectRunner
-```
-
-
-### Run with Local Excel File
-```bash
-python main.py --config_path config_dev.json --runner DirectRunner --input=Local --local_file=local_test/sample_transcript_data.xlsx --output_file=local_test/output_redacted_data.xlsx
-```
-
-- For BigQuery, the pipeline reads from the configured table in `config.json`.
-- For Local, the pipeline reads from the specified Excel file and writes output to the specified Excel file.
-
-## Customization
-
-### Modifying Configuration
-Edit `config.json` to change:
-
-
-**Table Names:**
-```json
-{
-  "tables": {
-    "source": {"name": "your_source_table"},
-    "target": {"name": "your_target_table"}
-  }
-}
-```
-
-**Column Mapping:**
-```json
-{
-  "tables": {
-    "source": {
-      "columns": {
-        "transaction_id": "your_id_column",
-        "transcription_file_dt": "your_date_column",
-        "conversation_transcript_json": "your_json_column"
-      }
-    }
-  }
-}
-```
-
-**PII Replacements:**
-```json
-{
-  "pii_entities": {
-    "PERSON": "#####",
-    "PHONE_NUMBER": "#####",
-    "EMAIL_ADDRESS": "#####"
-  }
-}
-```
-
-### Command Line Options
-You can pass any Apache Beam pipeline options:
-```bash
-# Local execution with specific worker count
-python
-
-The pipeline uses the `redactConfig.yaml` file from the parent directory, so any changes to entity mappings or NLP settings will be reflected in local runs.
-
-## Selecting Environment
-
-You can now select the environment config file at runtime:
-
-- For development: `--config_path config_dev.json`
-- For production: `--config_path config_prod.json`
-
-This allows you to switch between dev and prod settings without changing code.
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### Import Errors
+**1. Permission Denied - Artifact Registry**
+```
+ERROR: denied: Permission "artifactregistry.repositories.downloadArtifacts" denied
+```
+**Solution:** Grant Artifact Registry Reader role to Dataflow service account:
 ```bash
-# Make sure virtual environment is activated
-venv\Scripts\activate  # Windows
-source venv/bin/activate  # macOS/Linux
-
-# Reinstall dependencies
-pip install -r requirements.txt
+gcloud artifacts repositories add-iam-policy-binding shared-redaction-app \
+  --location=europe-west1 \
+  --member="serviceAccount:redaction-tf-df@skyuk-uk-reg-expmnt-dev.iam.gserviceaccount.com" \
+  --role="roles/artifactregistry.reader"
 ```
 
-#### spaCy Model Missing
+**2. Cloud Build Submission Failed**
+```
+ERROR: User [papai.sadhukhan@sky.uk] does not have permission to submit builds
+```
+**Solution:** Use Cloud Build service account instead:
 ```bash
-python -m spacy download en_core_web_lg
-
-# Verify installation
-python -c "import spacy; spacy.load('en_core_web_lg')"
+# build_template.sh already uses this:
+serviceAccount: '181982885154-compute@developer.gserviceaccount.com'
 ```
 
-#### Configuration File Not Found
-The pipeline looks for `redactConfig.yaml` in the parent directory. Make sure you're running from the correct location:
+**3. spaCy Model Not Found on Workers**
+```
+OSError: [E050] Can't find model 'en_core_web_lg'
+```
+**Solution:** Model is pre-downloaded in Dockerfile. Rebuild template:
 ```bash
-# Should be in: .../redaction/local_run/
-pwd  # or cd on Windows
-ls ..  # Should show redactConfig.yaml
+./deployment/build_template.sh
 ```
 
-#### Memory Issues
-If you encounter memory issues:
-```python
-# In main.py, modify pipeline options:
-options = PipelineOptions([
-    '--runner=DirectRunner',
-    '--direct_num_workers=1',  # Reduce workers
-    '--direct_running_mode=in_memory'  # Use in-memory processing
-])
+**4. BigQuery Temp Table Conflicts**
+```
+Error: temp table beam_temp_table_xxx already exists
+```
+**Solution:** Pipeline auto-cleans temp tables before execution. If persisting, manually delete:
+```bash
+bq rm -f skyuk-uk-reg-expmnt-dev:dataflow_temp_dataset.beam_temp_table_*
 ```
 
-## Development Workflow
+**5. Pipeline Runs But No Redactions**
+```
+All conversations processed but entities still visible
+```
+**Solution:** Check detection scores in logs:
+```bash
+# Look for "Detected ENTITY_TYPE: 'text' (score: X.XX)"
+# If scores < 0.7, adjust min_score_threshold in config/redactConfig.yaml
+```
 
-1. **Edit Code**: Make changes to `main.py`
-2. **Test**: Run `python test_setup.py`
-3. **Execute**: Run `python main.py`
-4. **Debug**: Check console output and logs
-5. **Iterate**: Repeat until satisfied
+### Debugging Commands
 
-## Moving to Production
+```bash
+# Check Dataflow job status
+gcloud dataflow jobs list --region=europe-west1 --status=active
 
-When you're ready to deploy changes to production:
+# Stream worker logs
+gcloud dataflow jobs logs <JOB_ID> --region=europe-west1
 
-1. **Update Production Code**: Apply your changes to `../main.py`
-2. **Test Locally**: Run the modified production code with DirectRunner
-3. **Build Containers**: Use the Cloud Build configuration
-4. **Deploy**: Submit to Google Cloud Dataflow
+# Test locally with verbose logging
+python main.py \
+  --config_path=config/config_dev.json \
+  --runner=DirectRunner \
+  --log_level=DEBUG
 
-## Performance Notes
+# Verify BigQuery output
+bq query --use_legacy_sql=false \
+  'SELECT transaction_id, redacted_entity 
+   FROM `skyuk-uk-reg-expmnt-dev.uk_call_transcript_exprmnt.td_call_redaction_p2` 
+   LIMIT 10'
+```
 
-- **Local execution** is great for development but limited by single-machine resources
-- **Sample data** processes in seconds
-- **Real BigQuery data** (if you run `../main.py` locally) will take longer
-- **Production deployment** handles large-scale data efficiently
+## Performance Considerations
 
-## Next Steps
+- **spaCy Model**: 738 MB model pre-downloaded in container (adds ~2 min to build time)
+- **Batch Size**: 300 records per BigQuery write (configurable in `config`)
+- **Worker Autoscaling**: Dataflow auto-scales based on workload
+- **Processing Rate**: ~100-200 transcripts/min on n1-standard-4 workers
+- **Cost Optimization**: Use `limit` in dev config to avoid processing full dataset during testing
 
-1. Run `python test_setup.py` to verify setup
-2. Run `python main.py` to see PII redaction in action
-3. Experiment with the sample data and configuration
-4. When ready, move to production deployment in the parent directory
+## Maintenance
+
+### Updating PII Entity Mappings
+
+Edit `config/config_dev.json` or `config/config_prod.json`:
+
+```json
+"pii_entities": {
+  "NEW_ENTITY_TYPE": "[REDACTED NEW_TYPE]"
+}
+```
+
+Rebuild template:
+```bash
+./deployment/build_template.sh
+```
+
+### Updating Deny List
+
+Edit `config/redactConfig.yaml`:
+
+```yaml
+deny_list:
+  - EXISTING_WORD
+  - NEW_WORD_TO_EXCLUDE
+```
+
+Rebuild template and redeploy.
+
+### Updating spaCy Model Version
+
+Edit `requirements.txt`:
+```
+spacy==3.8.0  # Update version
+```
+
+Edit `deployment/Dockerfile`:
+```dockerfile
+RUN python -m spacy download en_core_web_lg
+```
+
+Rebuild template.
+
+## Contributing
+
+When adding new recognizers:
+
+1. Implement in `utils/entity_recognizers.py` following `StatefulEntityRecognizer` pattern
+2. Register in `main.py` → `EntityRecognizerPIITransform.setup()`
+3. Add context indicators to `config/config_*.json`
+4. Add detection score threshold to `config/redactConfig.yaml`
+5. Test with DirectRunner before deploying to Dataflow
+
+## License
+
+Proprietary - Sky UK Limited
+
+## Support
+
+For issues or questions:
+- **Team**: Sky UK Data Engineering
+- **Repository**: [Link to repo]
+- **Documentation**: This README
+
+---
+
+**Last Updated**: 2024-01-XX  
+**Version**: 1.0.0  
+**Apache Beam**: 2.61.0  
+**Python**: 3.9  
+**Presidio**: 2.2.359

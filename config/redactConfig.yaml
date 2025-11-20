@@ -1,0 +1,302 @@
+# Configuration for redaction pipeline
+# Includes spaCy model settings, deny_list, validation, and detection scores
+
+nlp_engine_name: spacy
+models:
+  - lang_code: en
+    model_name: en_core_web_lg
+
+# Deny list - words that should NOT be redacted as PII
+# Used for:
+# 1. Exact match filtering: If detected entity text EXACTLY matches a deny_list word, skip it
+# 2. Conversational validation: Calculate ratio of conversational words in PERSON entities
+#    to filter false positives (e.g., "YOU'RE CAN'T" detected as PERSON)
+deny_list:
+  - THE
+  - AND
+  - THAT
+  - WITH
+  - FROM
+  - HAVE
+  - THIS
+  - WILL
+  - YOUR
+  - ABOUT
+  - JUST
+  - BEEN
+  - WHAT
+  - THERE
+  - CAN
+  - OUT
+  - OTHER
+  - WERE
+  - ALL
+  - THEIR
+  - WHEN
+  - MAKE
+  - LIKE
+  - TIME
+  - NO
+  - IF
+  - SO
+  - HIM
+  - TWO
+  - MORE
+  - WRITE
+  - SEE
+  - NUMBER
+  - WAY
+  - COULD
+  - PEOPLE
+  - MY
+  - THAN
+  - FIRST
+  - WATER
+  - BEEN
+  - CALL
+  - WHO
+  - OIL
+  - ITS
+  - NOW
+  - FIND
+  - LONG
+  - DOWN
+  - DAY
+  - DID
+  - GET
+  - COME
+  - MADE
+  - MAY
+  - PART
+  - OVER
+  - NEW
+  - SOUND
+  - TAKE
+  - ONLY
+  - LITTLE
+  - WORK
+  - KNOW
+  - PLACE
+  - YEAR
+  - LIVE
+  - ME
+  - BACK
+  - GIVE
+  - MOST
+  - VERY
+  - AFTER
+  - THING
+  - OUR
+  - JUST
+  - NAME
+  - GOOD
+  - SENTENCE
+  - MAN
+  - THINK
+  - SAY
+  - GREAT
+  - WHERE
+  - HELP
+  - THROUGH
+  - MUCH
+  - BEFORE
+  - LINE
+  - RIGHT
+  - TOO
+  - MEAN
+  - OLD
+  - ANY
+  - SAME
+  - TELL
+  - BOY
+  - FOLLOW
+  - CAME
+  - WANT
+  - SHOW
+  - ALSO
+  - AROUND
+  - FORM
+  - THREE
+  - SMALL
+  - SET
+  - PUT
+  - END
+  - DOES
+  - ANOTHER
+  - WELL
+  - LARGE
+  - MUST
+  - BIG
+  - EVEN
+  - SUCH
+  - BECAUSE
+  - TURN
+  - HERE
+  - WHY
+  - ASK
+  - WENT
+  - MEN
+  - READ
+  - NEED
+  - LAND
+  - DIFFERENT
+  - HOME
+  - US
+  - MOVE
+  - TRY
+  - KIND
+  - HAND
+  - PICTURE
+  - AGAIN
+  - CHANGE
+  - OFF
+  - PLAY
+  - SPELL
+  - AIR
+  - AWAY
+  - ANIMAL
+  - HOUSE
+  - POINT
+  - PAGE
+  - LETTER
+  - MOTHER
+  - ANSWER
+  - FOUND
+  - STUDY
+  - STILL
+  - LEARN
+  - SHOULD
+  - AMERICA
+  - WORLD
+  - HIGH
+  - EVERY
+  - NEAR
+  - ADD
+  - FOOD
+  - BETWEEN
+  - OWN
+  - BELOW
+  - COUNTRY
+  - PLANT
+  - LAST
+  - SCHOOL
+  - FATHER
+  - KEEP
+  - TREE
+  - NEVER
+  - START
+  - CITY
+  - EARTH
+  - EYE
+  - LIGHT
+  - THOUGHT
+  - HEAD
+  - UNDER
+  - STORY
+  - SAW
+  - LEFT
+  - DON'T
+  - FEW
+  - WHILE
+  - ALONG
+  - MIGHT
+  - CLOSE
+  - SOMETHING
+  - SEEM
+  - NEXT
+  - HARD
+  - OPEN
+  - EXAMPLE
+  - BEGIN
+  - LIFE
+  - ALWAYS
+  - THOSE
+  - BOTH
+  - PAPER
+  - TOGETHER
+  - GOT
+  - GROUP
+  - OFTEN
+  - RUN
+
+# Number words used in spoken language (e.g., "ZERO ONE TWO THREE...")
+# Shared across all recognizers for context tracking
+number_words:
+  - ZERO
+  - ONE
+  - TWO
+  - THREE
+  - FOUR
+  - FIVE
+  - SIX
+  - SEVEN
+  - EIGHT
+  - NINE
+  - TEN
+  - ELEVEN
+  - TWELVE
+  - THIRTEEN
+  - FOURTEEN
+  - FIFTEEN
+  - SIXTEEN
+  - SEVENTEEN
+  - EIGHTEEN
+  - NINETEEN
+  - TWENTY
+  - THIRTY
+  - FORTY
+  - FIFTY
+  - SIXTY
+  - SEVENTY
+  - EIGHTY
+  - NINETY
+  - HUNDRED
+
+# Common filler words to skip in address/postcode detection
+# Helps avoid detecting "UM FOUR FIVE" as part of address
+filler_words:
+  - UM
+  - UH
+  - ER
+  - AH
+  - LIKE
+  - YOU KNOW
+  - WELL
+  - SO
+  - BASICALLY
+  - ACTUALLY
+  - LITERALLY
+  - OKAY
+  - RIGHT
+  - YEAH
+  - YES
+  - NO
+  - SURE
+  - ALRIGHT
+
+# Words that typically follow names in introductions
+# Used to detect name boundaries (e.g., "JOHN SMITH HERE")
+name_boundaries:
+  - HERE
+  - CALLING
+  - SPEAKING
+  - FROM
+  - AT
+  - WITH
+  - AND
+  - FOR
+
+# Validation settings for entity detection
+validation:
+  person_entity:
+    enabled: true
+    max_conversational_ratio: 0.5  # Max ratio of conversational words in detected text
+    # If > 50% of words in PERSON detection are conversational words, likely false positive
+    # Example: "YOU'RE CAN'T" = 100% conversational → rejected
+    #          "JOHN SMITH PLEASE" = 33% conversational → accepted
+
+# Detection score settings
+# Used to filter low-confidence detections
+detection_scores:
+  min_score_threshold: 0.7  # Minimum confidence score for entity detection
+  # Detections with score <= 0.7 will be filtered out to reduce false positives
