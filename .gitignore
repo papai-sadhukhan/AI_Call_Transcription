@@ -20,3 +20,5 @@ pipeline_debug.log
 # Test files
 test_*.py
 debug_*.py
+test/input.txt
+test/output.txt
