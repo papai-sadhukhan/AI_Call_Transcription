@@ -5,7 +5,7 @@
     "region": "europe-west1",
     "staging_location": "gs://dataflow-staging-europe-west1-181982885154/staging",
     "temp_bigquery_dataset" : "dataflow_temp_dataset",
-    "subnetwork": "https://www.googleapis.com/compute/v1/projects/skyuk-uk-reg-expmnt-dev/regions/europe-west1/subnetworks/expmnt-network",
+    "subnetwork": "https://www.googleapis.com/compute/v1/projects/skyuk-uk-shr-vpc-sc-ingt-dev/regions/europe-west1/subnetworks/sn-ds-ew1-ingt-dev-01-private",
     "job_name": "call-transcript-redaction-job",
     "service_account_email": "redaction-tf-df@skyuk-uk-reg-expmnt-dev.iam.gserviceaccount.com"
   },

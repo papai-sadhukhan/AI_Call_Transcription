@@ -3,7 +3,8 @@
 apache-beam==2.61.0
 presidio_analyzer==2.2.359
 presidio_anonymizer==2.2.359
-spacy==3.8.7
+spacy==3.7.2
+PyYAML>=6.0
 # Note: spacy-transformers has dependency conflicts on Windows with NumPy/PyTorch
 # Using en_core_web_lg instead (included with spacy)
 
