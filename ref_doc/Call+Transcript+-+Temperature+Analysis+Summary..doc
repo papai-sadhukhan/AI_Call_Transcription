@@ -1,0 +1,737 @@
+Date: Mon, 1 Dec 2025 11:03:06 +0000 (GMT)
+Message-ID: <1543155365.2598.1764586986404@up-0004018.bskyb.com>
+Subject: Exported From Confluence
+MIME-Version: 1.0
+Content-Type: multipart/related; 
+	boundary="----=_Part_2597_1465083405.1764586986403"
+
+------=_Part_2597_1465083405.1764586986403
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+Content-Location: file:///C:/exported.html
+
+<html xmlns:o=3D'urn:schemas-microsoft-com:office:office'
+      xmlns:w=3D'urn:schemas-microsoft-com:office:word'
+      xmlns:v=3D'urn:schemas-microsoft-com:vml'
+      xmlns=3D'urn:w3-org-ns:HTML'>
+<head>
+    <meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8=
+">
+    <title>Call Transcript - Temperature Analysis Summary.</title>
+    <!--[if gte mso 9]>
+    <xml>
+        <o:OfficeDocumentSettings>
+            <o:TargetScreenSize>1024x640</o:TargetScreenSize>
+            <o:PixelsPerInch>72</o:PixelsPerInch>
+            <o:AllowPNG/>
+        </o:OfficeDocumentSettings>
+        <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>90</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+    </xml>
+    <![endif]-->
+    <style>
+                <!--
+        @page Section1 {
+            size: 8.5in 11.0in;
+            margin: 1.0in;
+            mso-header-margin: .5in;
+            mso-footer-margin: .5in;
+            mso-paper-source: 0;
+        }
+
+        table {
+            border: solid 1px;
+            border-collapse: collapse;
+        }
+
+        table td, table th {
+            border: solid 1px;
+            padding: 5px;
+        }
+
+        td {
+            page-break-inside: avoid;
+        }
+
+        tr {
+            page-break-after: avoid;
+        }
+
+        div.Section1 {
+            page: Section1;
+        }
+
+        /* Confluence print stylesheet. Common to all themes for print medi=
+a */
+/* Full of !important until we improve batching for print CSS */
+
+@media print {
+    #main {
+        padding-bottom: 1em !important; /* The default padding of 6em is to=
+o much for printouts */
+    }
+
+    body {
+        font-family: Arial, Helvetica, FreeSans, sans-serif;
+        font-size: 10pt;
+        line-height: 1.2;
+    }
+
+    body, #full-height-container, #main, #page, #content, .has-personal-sid=
+ebar #content {
+        background: #fff !important;
+        color: #000 !important;
+        border: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+    }
+
+    a, a:link, a:visited, a:focus, a:hover, a:active {
+        color: #000;
+    }
+
+    #content h1,
+    #content h2,
+    #content h3,
+    #content h4,
+    #content h5,
+    #content h6 {
+        font-family: Arial, Helvetica, FreeSans, sans-serif;
+        page-break-after: avoid;
+    }
+
+    pre {
+        font-family: Monaco, "Courier New", monospace;
+    }
+
+    #header,
+    .aui-header-inner,
+    #navigation,
+    #sidebar,
+    .sidebar,
+    #personal-info-sidebar,
+    .ia-fixed-sidebar,
+    .page-actions,
+    .navmenu,
+    .ajs-menu-bar,
+    .noprint,
+    .inline-control-link,
+    .inline-control-link a,
+    a.show-labels-editor,
+    .global-comment-actions,
+    .comment-actions,
+    .quick-comment-container,
+    #addcomment {
+        display: none !important;
+    }
+
+    /* CONF-28544 cannot print multiple pages in IE */
+    #splitter-content {
+        position: relative !important;
+    }
+
+    .comment .date::before {
+        content: none !important; /* remove middot for print view */
+    }
+
+    h1.pagetitle img {
+        height: auto;
+        width: auto;
+    }
+
+    .print-only {
+        display: block;
+    }
+
+    #footer {
+        position: relative !important; /* CONF-17506 Place the footer at en=
+d of the content */
+        margin: 0;
+        padding: 0;
+        background: none;
+        clear: both;
+    }
+
+    #poweredby {
+        border-top: none;
+        background: none;
+    }
+
+    #poweredby li.print-only {
+        display: list-item;
+        font-style: italic;
+    }
+
+    #poweredby li.noprint {
+        display: none;
+    }
+
+    /* no width controls in print */
+    .wiki-content .table-wrap,
+    .wiki-content p,
+    .panel .codeContent,
+    .panel .codeContent pre,
+    .image-wrap {
+        overflow: visible !important;
+    }
+
+    /* TODO - should this work? */
+    #children-section,
+    #comments-section .comment,
+    #comments-section .comment .comment-body,
+    #comments-section .comment .comment-content,
+    #comments-section .comment p {
+        page-break-inside: avoid;
+    }
+
+    #page-children a {
+        text-decoration: none;
+    }
+
+    /**
+     hide twixies
+
+     the specificity here is a hack because print styles
+     are getting loaded before the base styles. */
+    #comments-section.pageSection .section-header,
+    #comments-section.pageSection .section-title,
+    #children-section.pageSection .section-header,
+    #children-section.pageSection .section-title,
+    .children-show-hide {
+        padding-left: 0;
+        margin-left: 0;
+    }
+
+    .children-show-hide.icon {
+        display: none;
+    }
+
+    /* personal sidebar */
+    .has-personal-sidebar #content {
+        margin-right: 0px;
+    }
+
+    .has-personal-sidebar #content .pageSection {
+        margin-right: 0px;
+    }
+
+    .no-print, .no-print * {
+        display: none !important;
+    }
+}
+-->
+    </style>
+</head>
+<body>
+    <h1>Call Transcript - Temperature Analysis Summary.</h1>
+    <div class=3D"Section1">
+        <p><strong>Dataset:</strong> 1 day of Verint call transcripts - 21,=
+856 calls<br><strong>Objective:</strong> Identify the optimal temperature f=
+or consistent and high-quality Q&amp;A outputs.</p>
+<p><strong>Model:</strong> <span style=3D"color: rgb(0,0,0);">gemini-2.0-fl=
+ash-001</span></p>
+<div class=3D"table-wrap">
+<table style=3D"" class=3D"confluenceTable">
+<tbody class=3D"">
+<tr class=3D"">
+<td style=3D"text-align: left;vertical-align: top;" class=3D"confluenceTd">=
+<strong>Parameter defaults</strong></td>
+<td style=3D"text-align: left;vertical-align: top;" class=3D"confluenceTd">
+<ul class=3D"vertex-ai-media-list">
+<li>Temperature: 0.0-2.0 (default 1.0)</li>
+<li>topP: 0.0-1.0 (default 0.95)</li>
+<li>topK: 64 (fixed)</li>
+<li>candidateCount: 1=E2=80=938 (default 1)</li>
+</ul></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id=3D"CallTranscriptTemperatureAnalysisSummary.-1.CorePerformance">1. C=
+ore Performance&nbsp;</h2>
+<p><strong>What this measures:</strong><br>
+ Average model performance metrics - model score and sentiment across all c=
+alls for each temperature.<br>
+ It shows how model quality and variability change as temperature increases=
+.</p>
+<p><br></p>
+<p><strong>Results:</strong></p>
+<div class=3D"table-wrap">
+<table class=3D"wrapped confluenceTable">
+<tbody class=3D"">
+<tr class=3D"">
+<td class=3D"confluenceTd">temperature</td>
+<td class=3D"confluenceTd">avg_model_score</td>
+<td class=3D"confluenceTd">std_model_score</td>
+<td class=3D"confluenceTd">avg_sentiment</td>
+<td class=3D"confluenceTd">std_sentiment</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.5</td>
+<td class=3D"confluenceTd">9.520</td>
+<td class=3D"confluenceTd">0.508</td>
+<td class=3D"confluenceTd">2.993</td>
+<td class=3D"confluenceTd">0.989</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.7</td>
+<td class=3D"confluenceTd">9.529</td>
+<td class=3D"confluenceTd">0.508</td>
+<td class=3D"confluenceTd">2.993</td>
+<td class=3D"confluenceTd">0.984</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.8</td>
+<td class=3D"confluenceTd">9.528</td>
+<td class=3D"confluenceTd"><strong>0.506</strong></td>
+<td class=3D"confluenceTd">2.990</td>
+<td class=3D"confluenceTd">0.987</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.9</td>
+<td class=3D"confluenceTd">9.516</td>
+<td class=3D"confluenceTd">0.509</td>
+<td class=3D"confluenceTd">2.990</td>
+<td class=3D"confluenceTd">0.991</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1</td>
+<td class=3D"confluenceTd"><strong>9.534</strong></td>
+<td class=3D"confluenceTd">0.509</td>
+<td class=3D"confluenceTd"><strong>2.994</strong></td>
+<td class=3D"confluenceTd">0.985</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.1</td>
+<td class=3D"confluenceTd"><strong>9.534</strong></td>
+<td class=3D"confluenceTd"><strong>0.506</strong></td>
+<td class=3D"confluenceTd"><strong>2.994</strong></td>
+<td class=3D"confluenceTd"><strong>0.981</strong></td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.2</td>
+<td class=3D"confluenceTd">9.532</td>
+<td class=3D"confluenceTd">0.515</td>
+<td class=3D"confluenceTd">2.991</td>
+<td class=3D"confluenceTd">0.985</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.3</td>
+<td class=3D"confluenceTd">9.517</td>
+<td class=3D"confluenceTd">0.510</td>
+<td class=3D"confluenceTd">2.989</td>
+<td class=3D"confluenceTd">0.995</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.5</td>
+<td class=3D"confluenceTd">9.519</td>
+<td class=3D"confluenceTd">0.510</td>
+<td class=3D"confluenceTd">2.992</td>
+<td class=3D"confluenceTd">0.997</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><br></p>
+<p>Model quality is more stable between <strong>0.8 =E2=80=93 1.1</strong>,=
+ with only marginal gains beyond that range.</p>
+<ul>
+<li><p><strong>0.8</strong> achieves the <em>lowest variability</em>, meani=
+ng it delivers consistent scores across different calls.</p></li>
+<li><p><strong>1.0 =E2=80=93 1.1</strong> produce the <em>highest average s=
+cores</em> and slightly more expressive summaries without sacrificing stabi=
+lity.</p></li>
+<li><p>Above <strong>1.1</strong>, variance rises and returns diminish =E2=
+=80=94 more randomness without measurable quality gain.</p></li>
+<li><p>Below <strong>0.7</strong>, responses become overly deterministic, o=
+ccasionally less natural in tone.</p></li>
+</ul>
+<p>Temperatures <strong>0.8 =E2=80=93 1.1</strong> represent the =E2=80=9Cp=
+erformance plateau,=E2=80=9D where the model balances reliability and lingu=
+istic richness.</p>
+<h2 id=3D"CallTranscriptTemperatureAnalysisSummary.-2.Flag&amp;Classificati=
+onStability">2. Flag &amp; Classification Stability</h2>
+<p><strong>What this measures:</strong><br>
+ How consistently the model identifies structured elements (flags and class=
+ifications) such as competitor mentions, cancellations, or compliance indic=
+ators.<br>
+ These values show whether adjusting temperature impacts the model=E2=80=99=
+s <em>factual detection and tagging accuracy</em>.</p>
+<p><br></p>
+<p><strong>Results:</strong></p>
+<div class=3D"table-wrap">
+<table class=3D"wrapped confluenceTable">
+<tbody class=3D"">
+<tr class=3D"">
+<td class=3D"confluenceTd">temperature</td>
+<td class=3D"confluenceTd">records</td>
+<td class=3D"confluenceTd">reason_agreement_rate</td>
+<td class=3D"confluenceTd">competitor_flag_rate</td>
+<td class=3D"confluenceTd">product_flag_rate</td>
+<td class=3D"confluenceTd">cancel_flag_rate</td>
+<td class=3D"confluenceTd">tech_issue_flag_rate</td>
+<td class=3D"confluenceTd">compliance_flag_rate</td>
+<td class=3D"confluenceTd">piracy_flag_rate</td>
+<td class=3D"confluenceTd">deferred_flag_rate</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.5</td>
+<td class=3D"confluenceTd">21856</td>
+<td class=3D"confluenceTd">0.965</td>
+<td class=3D"confluenceTd">0.332</td>
+<td class=3D"confluenceTd">0.921</td>
+<td class=3D"confluenceTd">0.482</td>
+<td class=3D"confluenceTd">0.298</td>
+<td class=3D"confluenceTd">0.134</td>
+<td class=3D"confluenceTd">0.005</td>
+<td class=3D"confluenceTd">0.240</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.7</td>
+<td class=3D"confluenceTd">21856</td>
+<td class=3D"confluenceTd">0.959</td>
+<td class=3D"confluenceTd">0.332</td>
+<td class=3D"confluenceTd">0.922</td>
+<td class=3D"confluenceTd">0.487</td>
+<td class=3D"confluenceTd">0.298</td>
+<td class=3D"confluenceTd">0.133</td>
+<td class=3D"confluenceTd">0.005</td>
+<td class=3D"confluenceTd">0.243</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.8</td>
+<td class=3D"confluenceTd">21856</td>
+<td class=3D"confluenceTd">0.960</td>
+<td class=3D"confluenceTd">0.331</td>
+<td class=3D"confluenceTd">0.920</td>
+<td class=3D"confluenceTd">0.488</td>
+<td class=3D"confluenceTd">0.297</td>
+<td class=3D"confluenceTd">0.133</td>
+<td class=3D"confluenceTd">0.006</td>
+<td class=3D"confluenceTd">0.242</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.9</td>
+<td class=3D"confluenceTd">21856</td>
+<td class=3D"confluenceTd">0.958</td>
+<td class=3D"confluenceTd">0.333</td>
+<td class=3D"confluenceTd">0.922</td>
+<td class=3D"confluenceTd">0.481</td>
+<td class=3D"confluenceTd">0.298</td>
+<td class=3D"confluenceTd">0.137</td>
+<td class=3D"confluenceTd">0.005</td>
+<td class=3D"confluenceTd">0.238</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1</td>
+<td class=3D"confluenceTd">21856</td>
+<td class=3D"confluenceTd">0.953</td>
+<td class=3D"confluenceTd">0.330</td>
+<td class=3D"confluenceTd">0.921</td>
+<td class=3D"confluenceTd">0.491</td>
+<td class=3D"confluenceTd">0.297</td>
+<td class=3D"confluenceTd">0.135</td>
+<td class=3D"confluenceTd">0.005</td>
+<td class=3D"confluenceTd">0.243</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.1</td>
+<td class=3D"confluenceTd">21856</td>
+<td class=3D"confluenceTd">0.951</td>
+<td class=3D"confluenceTd">0.330</td>
+<td class=3D"confluenceTd">0.921</td>
+<td class=3D"confluenceTd">0.493</td>
+<td class=3D"confluenceTd">0.298</td>
+<td class=3D"confluenceTd">0.132</td>
+<td class=3D"confluenceTd">0.005</td>
+<td class=3D"confluenceTd">0.246</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.2</td>
+<td class=3D"confluenceTd">21856</td>
+<td class=3D"confluenceTd">0.950</td>
+<td class=3D"confluenceTd">0.331</td>
+<td class=3D"confluenceTd">0.921</td>
+<td class=3D"confluenceTd">0.494</td>
+<td class=3D"confluenceTd">0.296</td>
+<td class=3D"confluenceTd">0.132</td>
+<td class=3D"confluenceTd">0.005</td>
+<td class=3D"confluenceTd">0.245</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.3</td>
+<td class=3D"confluenceTd">21856</td>
+<td class=3D"confluenceTd">0.953</td>
+<td class=3D"confluenceTd">0.333</td>
+<td class=3D"confluenceTd">0.922</td>
+<td class=3D"confluenceTd">0.482</td>
+<td class=3D"confluenceTd">0.298</td>
+<td class=3D"confluenceTd">0.138</td>
+<td class=3D"confluenceTd">0.005</td>
+<td class=3D"confluenceTd">0.239</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.5</td>
+<td class=3D"confluenceTd">21856</td>
+<td class=3D"confluenceTd">0.955</td>
+<td class=3D"confluenceTd">0.332</td>
+<td class=3D"confluenceTd">0.921</td>
+<td class=3D"confluenceTd">0.481</td>
+<td class=3D"confluenceTd">0.301</td>
+<td class=3D"confluenceTd">0.138</td>
+<td class=3D"confluenceTd">0.005</td>
+<td class=3D"confluenceTd">0.237</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><br></p>
+<p>Structured classification outputs remain more or less identical across a=
+ll temperatures.</p>
+<ul>
+<li><p>Every flag fluctuates by &lt; 2 percentage points, indicating that t=
+he model=E2=80=99s factual detection is temperature-invariant.</p></li>
+<li><p>Increasing temperature affects <em>phrasing</em> (e.g., wording of s=
+ummaries) but <strong>n</strong>ot the underlying classification logic.</p>=
+</li>
+<li><p>This confirms that any performance differences seen in Q1 are relate=
+d to expressiveness and fluency, not loss of factual precision.</p></li>
+</ul>
+<p>You can safely tune temperature for tone or variety without impacting th=
+e reliability of structured data extraction.</p>
+<h2 id=3D"CallTranscriptTemperatureAnalysisSummary.-3.WinnerperCall">3. Win=
+ner per Call&nbsp;</h2>
+<p><strong>What this measures:</strong><br>
+ For each individual call, identifies which temperature achieved the highes=
+t model score, and calculates the<strong> </strong>margin between the top a=
+nd second-best result.<br>
+ This shows which temperature most often produces the best response and whe=
+ther those wins are decisive or marginal.</p>
+<p><br></p>
+<p><strong>Results:</strong></p>
+<div class=3D"table-wrap">
+<table class=3D"wrapped confluenceTable">
+<tbody class=3D"">
+<tr class=3D"">
+<td class=3D"confluenceTd">temperature</td>
+<td class=3D"confluenceTd">calls_won</td>
+<td class=3D"confluenceTd">avg_winning_score</td>
+<td class=3D"confluenceTd">avg_margin_vs_second</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.1</td>
+<td class=3D"confluenceTd"><strong>12334</strong></td>
+<td class=3D"confluenceTd">9.952</td>
+<td class=3D"confluenceTd">0.018</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.7</td>
+<td class=3D"confluenceTd">4234</td>
+<td class=3D"confluenceTd">9.998</td>
+<td class=3D"confluenceTd">0.028</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.5</td>
+<td class=3D"confluenceTd">1656</td>
+<td class=3D"confluenceTd">9.998</td>
+<td class=3D"confluenceTd">0.037</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.2</td>
+<td class=3D"confluenceTd">1426</td>
+<td class=3D"confluenceTd">9.999</td>
+<td class=3D"confluenceTd">0.142</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1</td>
+<td class=3D"confluenceTd">844</td>
+<td class=3D"confluenceTd">9.999</td>
+<td class=3D"confluenceTd">0.205</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.3</td>
+<td class=3D"confluenceTd">591</td>
+<td class=3D"confluenceTd">10</td>
+<td class=3D"confluenceTd">0.367</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">1.5</td>
+<td class=3D"confluenceTd">441</td>
+<td class=3D"confluenceTd">9.998</td>
+<td class=3D"confluenceTd">0.587</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.9</td>
+<td class=3D"confluenceTd">191</td>
+<td class=3D"confluenceTd">10</td>
+<td class=3D"confluenceTd">0.696</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd">0.8</td>
+<td class=3D"confluenceTd"><strong>139</strong></td>
+<td class=3D"confluenceTd"><strong>10</strong></td>
+<td class=3D"confluenceTd"><strong>1</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><br></p>
+<ul>
+<li><p>1.1 clearly produces the highest number of top-scoring outputs, conf=
+irming it=E2=80=99s the model=E2=80=99s most reliable high-performance zone=
+.</p></li>
+<li><p>However, its wins are narrow (margin =3D 0.018), suggesting that whi=
+le it often performs best, the gap to other temperatures is small.</p></li>
+<li><p>0.8 wins fewer calls but with<strong> </strong>the largest average m=
+argin (1.0) =E2=80=94 meaning that when it=E2=80=99s right, it=E2=80=99s <e=
+m>decisively right</em>.</p></li>
+<li><p>Higher temperatures (=E2=89=A5 1.2) occasionally win by large margin=
+s but inconsistently, reflecting more creativity and variability.</p></li>
+</ul>
+<p><br>
+ Temperature 1.1 dominates in raw success frequency, while 0.8 offers stron=
+ger determinism and confidence per win, ideal for stable production use.</p=
+>
+<p><br></p>
+<h2 id=3D"CallTranscriptTemperatureAnalysisSummary.-OverallSynthesis">Overa=
+ll Synthesis</h2>
+<p><br></p>
+<div class=3D"table-wrap">
+<table class=3D"wrapped confluenceTable">
+<thead class=3D"">
+<tr class=3D"">
+<th class=3D"confluenceTh">Dimension</th>
+<th class=3D"confluenceTh">Optimal Range</th>
+<th class=3D"confluenceTh">Commentary</th>
+</tr>
+</thead>
+<tbody class=3D"">
+<tr class=3D"">
+<td class=3D"confluenceTd"><strong>Average model quality</strong></td>
+<td class=3D"confluenceTd">1.0 =E2=80=93 1.1</td>
+<td class=3D"confluenceTd">Highest mean scores and most call-level wins</td=
+>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><strong>Output stability</strong></td>
+<td class=3D"confluenceTd">0.8 =E2=80=93 1.1</td>
+<td class=3D"confluenceTd">Lowest variance in scoring and sentiment</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><strong>Flag consistency</strong></td>
+<td class=3D"confluenceTd">All temperatures</td>
+<td class=3D"confluenceTd">No material difference; stable factual extractio=
+n</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><strong>Call-level dominance</strong></td>
+<td class=3D"confluenceTd">1.1</td>
+<td class=3D"confluenceTd">Wins majority of calls, even if by narrow margin=
+s</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><strong>Determinism / reproducibility</strong></=
+td>
+<td class=3D"confluenceTd">0.8</td>
+<td class=3D"confluenceTd">Fewer but more decisive wins; lowest variance</t=
+d>
+</tr>
+</tbody>
+</table>
+</div>
+<p><br></p>
+<h2 id=3D"CallTranscriptTemperatureAnalysisSummary.-FinalRecommendation">Fi=
+nal Recommendation</h2>
+<p><br></p>
+<div class=3D"table-wrap">
+<table class=3D"wrapped confluenceTable">
+<thead class=3D"">
+<tr class=3D"">
+<th class=3D"confluenceTh">Use Case</th>
+<th class=3D"confluenceTh">Recommended Temperature</th>
+<th class=3D"confluenceTh">Why</th>
+</tr>
+</thead>
+<tbody class=3D"">
+<tr class=3D"">
+<td class=3D"confluenceTd"><strong>Production / automated analytics</strong=
+></td>
+<td class=3D"confluenceTd"><strong>0.8</strong></td>
+<td class=3D"confluenceTd">Delivers the most stable and reproducible output=
+s with strong confidence margins and minimal variability.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><strong>General summaries / balanced performance=
+</strong></td>
+<td class=3D"confluenceTd"><strong>1.0 =E2=80=93 1.1</strong></td>
+<td class=3D"confluenceTd">Peak average model score and majority of call-le=
+vel wins while remaining stable.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><strong>Exploratory or creative summaries</stron=
+g></td>
+<td class=3D"confluenceTd"><strong>=E2=89=A5 1.2</strong></td>
+<td class=3D"confluenceTd">Produces greater linguistic variety but increase=
+s output randomness and reduces determinism.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><br></p>
+<p>The Gemini model performs optimally between&nbsp;temperature =3D 0.8 and=
+ 1.1.<br>
+ Use <strong>0.8</strong> as the production default for consistency and <st=
+rong>1.1</strong> for richer, more expressive summaries when minor variabil=
+ity is acceptable.</p>
+<h2 id=3D"CallTranscriptTemperatureAnalysisSummary.-FurtherAnalysis">Furthe=
+r Analysis</h2>
+<p>Several follow-ups are essential to strengthen confidence before final d=
+eployment:</p>
+<ol>
+<li><p><strong>Repeatability Testing:</strong> (Must be done next or in QA =
+process)<br>
+ Run multiple generations at the same temperature to measure<strong> </stro=
+ng>within-temperature variance and confirm that stability holds under repea=
+ted runs.</p></li>
+<li><p><strong>Prompt Engineering Review: </strong>(Strongly recommend).<br=
+>
+ Review and refine prompt design to ensure the questions and instructions a=
+re optimally structured for all temperature ranges.<br>
+ Well-engineered prompts often reduce variability, allowing higher temperat=
+ures to perform reliably.</p></li>
+<li><p><strong>Rerun Analysis with Smaller Temperature Increments: </strong=
+>(Strongly recommend)<br>
+ Focus on the <strong>0.7=E2=80=931.1 range</strong> using finer steps (e.g=
+., 0.75, 0.85, 0.95, 1.05).<br>
+ This will help identify whether the true optimum sits closer to 0.8 or 1.0=
+ and improve precision in model tuning.</p></li>
+<li><p><strong>Qualitative Output Evaluation: </strong>(Strongly recommend)=
+<br>
+ Combine quantitative scoring with manual review of a sample of model outpu=
+ts to ensure that higher-performing temperatures also produce more fluent, =
+relevant, and coherent summaries.</p></li>
+<li><p><strong>Downstream Impact &amp; Model Comparison:</strong><br>
+ Test the identified optimal range in real workflow conditions and benchmar=
+k against other LLMs to validate that this stability range (0.8=E2=80=931.1=
+) generalises across models and tasks.</p></li>
+</ol>
+<p>Other Parameters:</p>
+<p><strong>TopP/K: </strong>Top-P and Top-K parameters were not explored in=
+ this analysis, as the task involves factual Q&amp;A and structured extract=
+ion. Temperature alone adequately controls variability, while Top-P/K prima=
+rily influence linguistic creativity. Including them would introduce unnece=
+ssary complexity without adding analytical value for this use case.</p>
+<p><strong>Seeding: </strong>Experimental at the moment, therefore not expl=
+ored.</p>
+<p><br></p>
+    </div>
+</body>
+</html>
+------=_Part_2597_1465083405.1764586986403--

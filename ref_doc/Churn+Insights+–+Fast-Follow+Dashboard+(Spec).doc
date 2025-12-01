@@ -1,0 +1,742 @@
+Date: Mon, 1 Dec 2025 11:03:12 +0000 (GMT)
+Message-ID: <1567876669.2600.1764586992901@up-0004018.bskyb.com>
+Subject: Exported From Confluence
+MIME-Version: 1.0
+Content-Type: multipart/related; 
+	boundary="----=_Part_2599_53539453.1764586992901"
+
+------=_Part_2599_53539453.1764586992901
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+Content-Location: file:///C:/exported.html
+
+<html xmlns:o=3D'urn:schemas-microsoft-com:office:office'
+      xmlns:w=3D'urn:schemas-microsoft-com:office:word'
+      xmlns:v=3D'urn:schemas-microsoft-com:vml'
+      xmlns=3D'urn:w3-org-ns:HTML'>
+<head>
+    <meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8=
+">
+    <title>Churn Insights =E2=80=93 Fast-Follow Dashboard (Spec)</title>
+    <!--[if gte mso 9]>
+    <xml>
+        <o:OfficeDocumentSettings>
+            <o:TargetScreenSize>1024x640</o:TargetScreenSize>
+            <o:PixelsPerInch>72</o:PixelsPerInch>
+            <o:AllowPNG/>
+        </o:OfficeDocumentSettings>
+        <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>90</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+    </xml>
+    <![endif]-->
+    <style>
+                <!--
+        @page Section1 {
+            size: 8.5in 11.0in;
+            margin: 1.0in;
+            mso-header-margin: .5in;
+            mso-footer-margin: .5in;
+            mso-paper-source: 0;
+        }
+
+        table {
+            border: solid 1px;
+            border-collapse: collapse;
+        }
+
+        table td, table th {
+            border: solid 1px;
+            padding: 5px;
+        }
+
+        td {
+            page-break-inside: avoid;
+        }
+
+        tr {
+            page-break-after: avoid;
+        }
+
+        div.Section1 {
+            page: Section1;
+        }
+
+        /* Confluence print stylesheet. Common to all themes for print medi=
+a */
+/* Full of !important until we improve batching for print CSS */
+
+@media print {
+    #main {
+        padding-bottom: 1em !important; /* The default padding of 6em is to=
+o much for printouts */
+    }
+
+    body {
+        font-family: Arial, Helvetica, FreeSans, sans-serif;
+        font-size: 10pt;
+        line-height: 1.2;
+    }
+
+    body, #full-height-container, #main, #page, #content, .has-personal-sid=
+ebar #content {
+        background: #fff !important;
+        color: #000 !important;
+        border: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+    }
+
+    a, a:link, a:visited, a:focus, a:hover, a:active {
+        color: #000;
+    }
+
+    #content h1,
+    #content h2,
+    #content h3,
+    #content h4,
+    #content h5,
+    #content h6 {
+        font-family: Arial, Helvetica, FreeSans, sans-serif;
+        page-break-after: avoid;
+    }
+
+    pre {
+        font-family: Monaco, "Courier New", monospace;
+    }
+
+    #header,
+    .aui-header-inner,
+    #navigation,
+    #sidebar,
+    .sidebar,
+    #personal-info-sidebar,
+    .ia-fixed-sidebar,
+    .page-actions,
+    .navmenu,
+    .ajs-menu-bar,
+    .noprint,
+    .inline-control-link,
+    .inline-control-link a,
+    a.show-labels-editor,
+    .global-comment-actions,
+    .comment-actions,
+    .quick-comment-container,
+    #addcomment {
+        display: none !important;
+    }
+
+    /* CONF-28544 cannot print multiple pages in IE */
+    #splitter-content {
+        position: relative !important;
+    }
+
+    .comment .date::before {
+        content: none !important; /* remove middot for print view */
+    }
+
+    h1.pagetitle img {
+        height: auto;
+        width: auto;
+    }
+
+    .print-only {
+        display: block;
+    }
+
+    #footer {
+        position: relative !important; /* CONF-17506 Place the footer at en=
+d of the content */
+        margin: 0;
+        padding: 0;
+        background: none;
+        clear: both;
+    }
+
+    #poweredby {
+        border-top: none;
+        background: none;
+    }
+
+    #poweredby li.print-only {
+        display: list-item;
+        font-style: italic;
+    }
+
+    #poweredby li.noprint {
+        display: none;
+    }
+
+    /* no width controls in print */
+    .wiki-content .table-wrap,
+    .wiki-content p,
+    .panel .codeContent,
+    .panel .codeContent pre,
+    .image-wrap {
+        overflow: visible !important;
+    }
+
+    /* TODO - should this work? */
+    #children-section,
+    #comments-section .comment,
+    #comments-section .comment .comment-body,
+    #comments-section .comment .comment-content,
+    #comments-section .comment p {
+        page-break-inside: avoid;
+    }
+
+    #page-children a {
+        text-decoration: none;
+    }
+
+    /**
+     hide twixies
+
+     the specificity here is a hack because print styles
+     are getting loaded before the base styles. */
+    #comments-section.pageSection .section-header,
+    #comments-section.pageSection .section-title,
+    #children-section.pageSection .section-header,
+    #children-section.pageSection .section-title,
+    .children-show-hide {
+        padding-left: 0;
+        margin-left: 0;
+    }
+
+    .children-show-hide.icon {
+        display: none;
+    }
+
+    /* personal sidebar */
+    .has-personal-sidebar #content {
+        margin-right: 0px;
+    }
+
+    .has-personal-sidebar #content .pageSection {
+        margin-right: 0px;
+    }
+
+    .no-print, .no-print * {
+        display: none !important;
+    }
+}
+-->
+    </style>
+</head>
+<body>
+    <h1>Churn Insights =E2=80=93 Fast-Follow Dashboard (Spec)</h1>
+    <div class=3D"Section1">
+        <h1 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-WORKINPRO=
+GRESS"><a class=3D"unresolved" href=3D"#">WORK IN PROGRESS</a></h1>
+<p><style type=3D"text/css">/*<![CDATA[*/
+div.rbtoc1764586992889 {padding: 0px;}
+div.rbtoc1764586992889 ul {margin-left: 0px;}
+div.rbtoc1764586992889 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style></p>
+<div class=3D"toc-macro rbtoc1764586992889">
+<ul class=3D"toc-indentation">
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-WORKINPROGR=
+ESS">WORK IN PROGRESS</a>
+<ul class=3D"toc-indentation">
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-1.Objective=
+&amp;scope">1. Objective &amp; scope</a></li>
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-2.Layout&am=
+p;behaviour">2. Layout &amp; behaviour</a></li>
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-3.KPIdefini=
+tions(logicinBIviewoverthemart)">3. KPI definitions (logic in BI view over =
+the mart)</a></li>
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-4.Datasourc=
+e&amp;martcontract">4. Data source &amp; mart contract</a>
+<ul class=3D"toc-indentation">
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-4.1Required=
+fieldsforthedashboardmart(minimum)">4.1 Required fields for the dashboard m=
+art (minimum)</a>
+<ul class=3D"toc-indentation">
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-A)Fieldssur=
+facedfromthemart">A) Fields surfaced from the mart</a></li>
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-B)Derivedfi=
+eldsintheBIview(v_churn_dash)">B) Derived fields in the BI view (v_churn_da=
+sh)</a></li>
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-C)Fieldcons=
+traints&amp;validation">C) Field constraints &amp; validation</a></li>
+</ul></li>
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-4.3KPITiles=
+=E2=80=93FieldReference">4.3 KPI Tiles =E2=80=93 Field Reference</a></li>
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-Notes">Note=
+s</a></li>
+</ul></li>
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-5.BIviewfor=
+Tableau(overthemart)[WIP]">5. BI view for Tableau (over the mart) [WIP]</a>=
+</li>
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-6.Performan=
+ce,security,governance[WIP]">6. Performance, security, governance [WIP]</a>=
+</li>
+<li><a href=3D"#ChurnInsights=E2=80=93FastFollowDashboard(Spec)-7.Buildchec=
+klist[WIP]">7. Build checklist [WIP]</a></li>
+</ul></li>
+</ul>
+</div>
+<p></p>
+<h2 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-1.Objective&amp;s=
+cope">1. Objective &amp; scope</h2>
+<p>Provide an executive/analyst view of <em>conversational churn indicators=
+</em> discovered from call transcripts, with trends and drill-downs to driv=
+ers such as <strong>competitors, service issues, offers &amp; pricing, life=
+style</strong>, etc. The dashboard draws on LLM-generated summaries and tag=
+s, enriched with interaction context, and supports human review (no automat=
+ed decisioning).</p>
+<h2 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-2.Layout&amp;beha=
+viour">2. Layout &amp; behaviour</h2>
+<p><strong>Top global filters (apply to all components):</strong></p>
+<ul>
+<li><p>Date range; Product; Primary call reason; Interaction direction; Ten=
+ure band; Loyalty tier; Region (out_postcode prefix); Repeat-call (24h/7d);=
+ Compliance flag.</p></li>
+</ul>
+<p><strong>Row A =E2=80=93 KPI tiles (at a glance):</strong></p>
+<ul>
+<li><p><strong>Total calls</strong> =E2=80=93 count of records in scope.</p=
+></li>
+<li><p><strong>High-risk share</strong> =E2=80=93 % of calls with <em>high =
+churn risk</em> (requires <code>ai_churn_risk_score</code> =E2=89=A5 4).</p=
+></li>
+<li><p><strong>Avg sentiment</strong> =E2=80=93 mean of <code>ai_customer_s=
+entiment_score</code> (1=E2=80=935).</p></li>
+<li><p><strong>Cancel attempts</strong> =E2=80=93 count of <code>ai_cancel_=
+attempt_flag =3D TRUE</code>.</p></li>
+<li><p><strong>Competitor mentions</strong> =E2=80=93 count of <code>ai_com=
+petitor_flag =3D TRUE</code>.</p></li>
+<li><p><strong>Post-call churn pipeline</strong> =E2=80=93 % where <code>po=
+st_call_churn_pipeline_flag =3D TRUE</code>.</p></li>
+</ul>
+<p><strong>Row B =E2=80=93 Visuals (choose 2 now, keep 1 optional):</strong=
+></p>
+<ol>
+<li><p><strong>Trend:</strong> High-risk share by week (line), with seconda=
+ry axis for avg sentiment (line).</p></li>
+<li><p><strong>Churn Driver mix:</strong> Stacked bar of <em>primary churn =
+drivers</em>=E2=80=94derive buckets from LLM fields aligned to the DS&amp;A=
+ categories (Competitors / Service / Offers &amp; Pricing / Lifestyle / Oth=
+er).</p></li>
+<li><p><em>(Optional initial table)</em> <strong>Top competitors</strong> w=
+ith counts, % share, and avg sentiment; clicking a brand filters the page.<=
+/p></li>
+</ol>
+<p><strong>Drill-down pattern:</strong> Clicking any KPI or chart element f=
+ilters the whole page; provide a detail table (hidden sheet) with one row p=
+er call (IDs, summary, reason, flags) for export.</p>
+<p><strong>Refresh:</strong> Daily batch (governed), not streaming.</p>
+<h2 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-3.KPIdefinitions(=
+logicinBIviewoverthemart)">3. KPI definitions (logic in BI view over the ma=
+rt)</h2>
+<ul>
+<li><p><code>total_calls</code> =3D <code>COUNT(*)</code></p></li>
+<li><p><code>high_risk_share</code> =3D <code>COUNTIF(ai_churn_risk_score &=
+gt;=3D 4) / COUNT(*)</code> <em>(see schema gap below)</em></p></li>
+<li><p><code>avg_sentiment</code> =3D <code>AVG(ai_customer_sentiment_score=
+)</code></p></li>
+<li><p><code>cancel_attempts</code> =3D <code>COUNTIF(ai_cancel_attempt_fla=
+g)</code></p></li>
+<li><p><code>competitor_mentions</code> =3D <code>COUNTIF(ai_competitor_fla=
+g)</code></p></li>
+<li><p><code>post_call_churn_pipeline_pct</code> =3D <code>COUNTIF(post_cal=
+l_churn_pipeline_flag) / COUNT(*)</code></p></li>
+</ul>
+<blockquote>
+<p>Note: DS&amp;A categories for their =E2=80=9CChurn Driver mix=E2=80=9D c=
+hart are mapped from LLM fields (e.g., competitors =E2=86=92&nbsp;<strong>C=
+ompetitors</strong>, technical_issue =E2=86=92 <strong>Service</strong>, ca=
+ncel_attempt + reasons =E2=86=92 <strong>Offers &amp; Pricing</strong> wher=
+e relevant, and any free-text reasons into <strong>Other/Lifestyle</strong>=
+).</p>
+</blockquote>
+<h2 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-4.Datasource&amp;=
+martcontract">4. Data source &amp; mart contract</h2>
+<p><strong>Primary feed:</strong> <code>uk_pub_expmnt_verint_callsummary_is=
+.mart_ai_call_summary</code> (published table). Current columns include int=
+eraction context, repeat flags, LLM fields (summary/reason/flags/sentiment)=
+, movement indicators, and post-call churn pipeline linkage.</p>
+<p><strong>Upstream lineage:</strong></p>
+<ul>
+<li><p>LLM typed outputs: <code>uk_pub_expmnt_verint_callsummary_is.ai_call=
+_summary</code> (includes <code>ai_churn_risk_score</code>, sentiment, comp=
+etitors, cancel/technical flags, etc.).</p></li>
+<li><p>P1 enrichment (joins to interactions/loyalty): <code>=E2=80=A6td_mar=
+t_ai_call_summary_p1</code>.</p></li>
+<li><p>P2 enrichment (repeat flags, product movements, churn-pipeline join)=
+: <code>=E2=80=A6td_mart_ai_call_summary_p2</code>.</p></li>
+</ul>
+<h3 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-4.1Requiredfields=
+forthedashboardmart(minimum)">4.1 Required fields for the dashboard mart (m=
+inimum)</h3>
+<p data-start=3D"53" data-end=3D"352"><strong data-start=3D"53" data-end=3D=
+"63">Scope.</strong> These are the fields required by the dashboard and its=
+ thin BI view (<code data-start=3D"133" data-end=3D"147">v_churn_dash[Name =
+TBC]</code>). Types are BigQuery types. Global filters use <strong data-sta=
+rt=3D"195" data-end=3D"207">cal_date</strong>, <strong data-start=3D"209" d=
+ata-end=3D"231">ai_primary_product</strong>, <strong data-start=3D"233" dat=
+a-end=3D"255">ai_compliance_flag</strong>, and <strong data-start=3D"261" d=
+ata-end=3D"286">interaction_direction</strong>.<br data-start=3D"287" data-=
+end=3D"290"><strong data-start=3D"290" data-end=3D"298" data-is-only-node=
+=3D"">PII.</strong> Only hashed identifiers are exposed to the dashboard.</=
+p>
+<h4 data-start=3D"354" data-end=3D"389" id=3D"ChurnInsights=E2=80=93FastFol=
+lowDashboard(Spec)-A)Fieldssurfacedfromthemart">A) Fields surfaced from the=
+ mart</h4>
+<div class=3D"table-wrap">
+<table class=3D"confluenceTable">
+<thead class=3D"">
+<tr class=3D"">
+<th class=3D"confluenceTh">Field</th>
+<th class=3D"confluenceTh">Type</th>
+<th class=3D"confluenceTh">Description / Definition</th>
+<th class=3D"confluenceTh">Used for</th>
+</tr>
+</thead>
+<tbody class=3D"">
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>call_id</code></td>
+<td class=3D"confluenceTd">STRING</td>
+<td class=3D"confluenceTd">Unique call record identifier.</td>
+<td class=3D"confluenceTd">Drill-down, de-duplication.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>cal_date</code></td>
+<td class=3D"confluenceTd">DATE</td>
+<td class=3D"confluenceTd">Call calendar date (UTC). Partition column.</td>
+<td class=3D"confluenceTd"><strong>Global date filter</strong>, trending.</=
+td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>interaction_start_ts</code></td>
+<td class=3D"confluenceTd">TIMESTAMP</td>
+<td class=3D"confluenceTd">Exact start time of the call.</td>
+<td class=3D"confluenceTd">Drill-down, time ordering (not a global filter).=
+</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>interaction_direction</code></td>
+<td class=3D"confluenceTd">STRING</td>
+<td class=3D"confluenceTd">Inbound / Outbound / Other.</td>
+<td class=3D"confluenceTd"><strong>Global filter</strong>.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>ai_primary_product</code></td>
+<td class=3D"confluenceTd">STRING</td>
+<td class=3D"confluenceTd">Primary product family for the call (e.g., TV, B=
+roadband, Mobile).</td>
+<td class=3D"confluenceTd"><strong>Global Product filter</strong>.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>ai_compliance_flag</code></td>
+<td class=3D"confluenceTd">BOOL</td>
+<td class=3D"confluenceTd">TRUE if the call is compliance-flagged.</td>
+<td class=3D"confluenceTd"><strong>Global filter</strong>, exclusions.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>ai_churn_risk_score</code></td>
+<td class=3D"confluenceTd">INT64</td>
+<td class=3D"confluenceTd">Churn risk score on a 0=E2=80=935 scale.</td>
+<td class=3D"confluenceTd">KPI logic (via <code>risk_flag</code>), detail.<=
+/td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>post_call_churn_pipeline_flag</code></td>
+<td class=3D"confluenceTd">BOOL</td>
+<td class=3D"confluenceTd">TRUE if a post-call churn workflow/pipeline was =
+triggered.</td>
+<td class=3D"confluenceTd">KPI tile =E2=80=9CPost-call churn pipeline %=E2=
+=80=9D.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>ai_competitors</code></td>
+<td class=3D"confluenceTd">ARRAY</td>
+<td class=3D"confluenceTd">Distinct competitors mentioned during the call.<=
+/td>
+<td class=3D"confluenceTd">KPI logic (via <code>competitor_mention_flag</co=
+de>), detail.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>customer_sentiment_score</code></td>
+<td class=3D"confluenceTd">FLOAT64</td>
+<td class=3D"confluenceTd">Customer sentiment on a <strong>1=E2=80=935</str=
+ong> scale (canonical).</td>
+<td class=3D"confluenceTd">KPI tile =E2=80=9CAverage sentiment=E2=80=9D, de=
+tail.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>model_confidence</code></td>
+<td class=3D"confluenceTd">FLOAT64</td>
+<td class=3D"confluenceTd">Model confidence on a <strong>0=E2=80=931</stron=
+g> scale.</td>
+<td class=3D"confluenceTd">KPI tile =E2=80=9CAverage model confidence=E2=80=
+=9D, QA.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>account_number_hash</code></td>
+<td class=3D"confluenceTd">STRING</td>
+<td class=3D"confluenceTd">SHA256 hex of <code>account_number</code>. Raw v=
+alue not exposed.</td>
+<td class=3D"confluenceTd">Governance, restricted joins (if needed).</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>agent_id_hash</code></td>
+<td class=3D"confluenceTd">STRING</td>
+<td class=3D"confluenceTd">SHA256 hex of <code>agent_id</code>. Raw value n=
+ot exposed.</td>
+<td class=3D"confluenceTd">Governance, restricted joins (if needed).</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-B)Derivedfieldsin=
+theBIview(v_churn_dash)">B) Derived fields in the BI view (<code data-start=
+=3D"2042" data-end=3D"2056">v_churn_dash</code>)</h4>
+<div class=3D"table-wrap">
+<table class=3D"confluenceTable">
+<thead class=3D"">
+<tr class=3D"">
+<th class=3D"confluenceTh">Field</th>
+<th class=3D"confluenceTh">Type</th>
+<th class=3D"confluenceTh">Definition</th>
+<th class=3D"confluenceTh">Used for</th>
+</tr>
+</thead>
+<tbody class=3D"">
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>risk_flag</code></td>
+<td class=3D"confluenceTd">BOOL</td>
+<td class=3D"confluenceTd"><code>ai_churn_risk_score &gt;=3D 4</code></td>
+<td class=3D"confluenceTd">KPI tile =E2=80=9CHigh-risk share=E2=80=9D, opti=
+onal filter.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>competitor_mention_flag</code></td>
+<td class=3D"confluenceTd">BOOL</td>
+<td class=3D"confluenceTd"><code>ARRAY_LENGTH(ai_competitors) &gt; 0</code>=
+ (treat NULL as empty)</td>
+<td class=3D"confluenceTd">KPI tile =E2=80=9CCalls with competitor mention=
+=E2=80=9D.</td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>iso_year_week</code></td>
+<td class=3D"confluenceTd">STRING</td>
+<td class=3D"confluenceTd"><code>FORMAT_DATE('%G-%V', cal_date)</code></td>
+<td class=3D"confluenceTd">Weekly trend grouping in charts.</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h4 data-start=3D"2456" data-end=3D"2492" id=3D"ChurnInsights=E2=80=93FastF=
+ollowDashboard(Spec)-C)Fieldconstraints&amp;validation">C) Field constraint=
+s &amp; validation</h4>
+<ul data-start=3D"2493" data-end=3D"2875" data-is-last-node=3D"" data-is-on=
+ly-node=3D"">
+<li data-start=3D"2493" data-end=3D"2603"><p data-start=3D"2495" data-end=
+=3D"2603"><code data-start=3D"2495" data-end=3D"2516">ai_churn_risk_score</=
+code> =E2=88=88 <strong data-start=3D"2519" data-end=3D"2528">[0,5]</strong=
+>; <code data-start=3D"2530" data-end=3D"2556">customer_sentiment_score</co=
+de> =E2=88=88 <strong data-start=3D"2559" data-end=3D"2568">[1,5]</strong>;=
+ <code data-start=3D"2570" data-end=3D"2588">model_confidence</code> =E2=88=
+=88 <strong data-start=3D"2591" data-end=3D"2600">[0,1]</strong>.</p></li>
+<li data-start=3D"2604" data-end=3D"2661"><p data-start=3D"2606" data-end=
+=3D"2661"><code data-start=3D"2606" data-end=3D"2616">cal_date</code> must =
+be non-NULL for all dashboarded rows.</p></li>
+<li data-start=3D"2662" data-end=3D"2757"><p data-start=3D"2664" data-end=
+=3D"2757">Treat <code data-start=3D"2670" data-end=3D"2686">ai_competitors<=
+/code> <strong data-start=3D"2687" data-end=3D"2695">NULL</strong> as an em=
+pty array when computing <code data-start=3D"2729" data-end=3D"2754">compet=
+itor_mention_flag</code>.</p></li>
+<li data-start=3D"2758" data-end=3D"2875" data-is-last-node=3D""><p data-st=
+art=3D"2760" data-end=3D"2875" data-is-last-node=3D"">Only hashed identifie=
+rs (<code data-start=3D"2785" data-end=3D"2806">account_number_hash</code>,=
+ <code data-start=3D"2808" data-end=3D"2823">agent_id_hash</code>) appear i=
+n exec-facing views; raw IDs are exclude</p></li>
+</ul>
+<h3 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-4.3KPITiles=E2=80=
+=93FieldReference">4.3 KPI Tiles =E2=80=93 Field Reference</h3>
+<p><strong data-start=3D"79" data-end=3D"89">Scope.</strong> This section l=
+ocks the <strong data-start=3D"113" data-end=3D"120">six</strong> KPI tiles=
+ used on the Fast-Follow Churn dashboard.<br data-start=3D"171" data-end=3D=
+"174"><strong data-start=3D"174" data-end=3D"184">Grain.</strong> KPIs are =
+evaluated over the filtered set in <code data-start=3D"229" data-end=3D"253=
+">v_churn_dash_kpi_tiles</code>.<br data-start=3D"254" data-end=3D"257"><st=
+rong data-start=3D"257" data-end=3D"269">Filters.</strong> All KPIs respect=
+ global filters: <code data-start=3D"303" data-end=3D"313">cal_date</code>,=
+ <code data-start=3D"315" data-end=3D"335">ai_primary_product</code>, <code=
+ data-start=3D"337" data-end=3D"357">ai_compliance_flag</code>, <code data-=
+start=3D"359" data-end=3D"382">interaction_direction</code>.<br data-start=
+=3D"383" data-end=3D"386"><strong data-start=3D"386" data-end=3D"396">Nulls=
+.</strong> Unless stated, nulls are excluded from numerators and denominato=
+rs.</p>
+<div class=3D"table-wrap">
+<table class=3D"confluenceTable">
+<thead class=3D"">
+<tr class=3D"">
+<th class=3D"confluenceTh"><strong>KPI Field</strong></th>
+<th class=3D"confluenceTh"><strong>Description</strong></th>
+<th class=3D"confluenceTh"><strong>Calculation / Source Logic</strong></th>
+<th class=3D"confluenceTh"><strong>Business Purpose</strong></th>
+<th class=3D"confluenceTh"><strong>Use Case</strong></th>
+<th class=3D"confluenceTh"><strong>MVP Delivery?</strong></th>
+<th class=3D"confluenceTh"><strong>Input Data Object</strong></th>
+</tr>
+</thead>
+<tbody class=3D"">
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>total_calls</code></td>
+<td class=3D"confluenceTd">Total number of Verint calls processed within th=
+e selected period.</td>
+<td class=3D"confluenceTd"><code>COUNT(DISTINCT call_id)</code> across all =
+call records within the date range filter.</td>
+<td class=3D"confluenceTd">Indicates total call volume; baseline for other =
+KPIs.</td>
+<td class=3D"confluenceTd">All use cases</td>
+<td class=3D"confluenceTd">Yes</td>
+<td class=3D"confluenceTd">View =E2=80=93 <code>v_churn_dash_kpi_tiles</cod=
+e> =E2=80=A2 Column =E2=80=93 <code>total_calls</code></td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>high_risk_share</code></td>
+<td class=3D"confluenceTd">Percentage of calls flagged as high churn risk.<=
+/td>
+<td class=3D"confluenceTd"><code>100 * SAFE_DIVIDE(SUM(CASE WHEN ai_churn_r=
+isk_score &gt;=3D 4 THEN 1 ELSE 0 END), COUNT(1))</code> (or use <code>risk=
+_flag</code>).</td>
+<td class=3D"confluenceTd">Highlights the proportion showing elevated churn=
+ potential.</td>
+<td class=3D"confluenceTd">Churn</td>
+<td class=3D"confluenceTd">Yes</td>
+<td class=3D"confluenceTd">View =E2=80=93 <code>v_churn_dash_kpi_tiles</cod=
+e> =E2=80=A2 Column =E2=80=93 <code>high_risk_share</code></td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>avg_sentiment_1_to_5</code></td>
+<td class=3D"confluenceTd">Average customer sentiment on a <strong>1=E2=80=
+=935</strong> scale.</td>
+<td class=3D"confluenceTd"><code>AVG(NULLIF(ai_customer_sentiment_score, 0.=
+0))</code> (alias to <code>customer_sentiment_score</code> if that=E2=80=99=
+s the mart name).</td>
+<td class=3D"confluenceTd">Measures customer experience quality.</td>
+<td class=3D"confluenceTd">Churn / CX</td>
+<td class=3D"confluenceTd">Yes</td>
+<td class=3D"confluenceTd">View =E2=80=93 <code>v_churn_dash_kpi_tiles</cod=
+e> =E2=80=A2 Column =E2=80=93 <code>avg_sentiment_1_to_5</code></td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>cancel_attempts</code></td>
+<td class=3D"confluenceTd">Count of calls where a cancellation attempt was =
+made.</td>
+<td class=3D"confluenceTd"><code>SUM(CASE WHEN ai_cancel_attempt_flag THEN =
+1 ELSE 0 END)</code></td>
+<td class=3D"confluenceTd">Quantifies immediate churn actions taken by cust=
+omers.</td>
+<td class=3D"confluenceTd">Churn</td>
+<td class=3D"confluenceTd">Yes</td>
+<td class=3D"confluenceTd">View =E2=80=93 <code>v_churn_dash_kpi_tiles</cod=
+e> =E2=80=A2 Column =E2=80=93 <code>cancel_attempts</code></td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>competitor_mentions</code></td>
+<td class=3D"confluenceTd">Count of calls with at least one competitor ment=
+ion.</td>
+<td class=3D"confluenceTd"><code>SUM(CASE WHEN competitor_mention_flag THEN=
+ 1 ELSE 0 END)</code> (or <code>SUM(CASE WHEN ai_competitor_flag THEN 1 ELS=
+E 0 END)</code>).</td>
+<td class=3D"confluenceTd">Tracks market pressure/drivers of churn.</td>
+<td class=3D"confluenceTd">Churn</td>
+<td class=3D"confluenceTd">Yes</td>
+<td class=3D"confluenceTd">View =E2=80=93 <code>v_churn_dash_kpi_tiles</cod=
+e> =E2=80=A2 Column =E2=80=93 <code>competitor_mentions</code></td>
+</tr>
+<tr class=3D"">
+<td class=3D"confluenceTd"><code>pipeline_share</code></td>
+<td class=3D"confluenceTd">Percentage of calls that triggered a post-call c=
+hurn pipeline/workflow.</td>
+<td class=3D"confluenceTd"><code>100 * SAFE_DIVIDE(SUM(CASE WHEN post_call_=
+churn_pipeline_flag THEN 1 ELSE 0 END), COUNT(1))</code></td>
+<td class=3D"confluenceTd">Monitors downstream operational load and convers=
+ion from risk to action.</td>
+<td class=3D"confluenceTd">Churn</td>
+<td class=3D"confluenceTd">Yes</td>
+<td class=3D"confluenceTd">View =E2=80=93 <code>v_churn_dash_kpi_tiles</cod=
+e> =E2=80=A2 Column =E2=80=93 <code>pipeline_share</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<pre><br></pre>
+<pre>Shared implementation notes</pre>
+<ul data-start=3D"3247" data-end=3D"3784" data-is-last-node=3D"" data-is-on=
+ly-node=3D"">
+<li data-start=3D"3247" data-end=3D"3389"><p data-start=3D"3249" data-end=
+=3D"3269"><strong data-start=3D"3249" data-end=3D"3267">Time controls:</str=
+ong></p>
+<ul data-start=3D"3272" data-end=3D"3389">
+<li data-start=3D"3272" data-end=3D"3311"><p data-start=3D"3274" data-end=
+=3D"3311">Global date filter uses <code data-start=3D"3298" data-end=3D"330=
+8">cal_date</code>.</p></li>
+<li data-start=3D"3314" data-end=3D"3389"><p data-start=3D"3316" data-end=
+=3D"3389">Weekly trends/line charts should use <code data-start=3D"3353" da=
+ta-end=3D"3368">iso_year_week</code> from <code data-start=3D"3374" data-en=
+d=3D"3388">v_churn_dash</code>.</p></li>
+</ul></li>
+<li data-start=3D"3390" data-end=3D"3522"><p data-start=3D"3392" data-end=
+=3D"3522"><strong data-start=3D"3392" data-end=3D"3411">PII/Governance:</st=
+rong> Only hashed IDs (<code data-start=3D"3429" data-end=3D"3450">account_=
+number_hash</code>, <code data-start=3D"3452" data-end=3D"3467">agent_id_ha=
+sh</code>) appear in dashboards; raw IDs stay out of exec views.</p></li>
+<li data-start=3D"3523" data-end=3D"3672"><p data-start=3D"3525" data-end=
+=3D"3672"><strong data-start=3D"3525" data-end=3D"3544">Quality guards:</st=
+rong> Add data tests that enforce:<br data-start=3D"3573" data-end=3D"3576"=
+><code data-start=3D"3578" data-end=3D"3607">ai_churn_risk_score =E2=88=88 =
+[0,5]</code>, <code data-start=3D"3609" data-end=3D"3643">customer_sentimen=
+t_score =E2=88=88 [1,5]</code>, <code data-start=3D"3645" data-end=3D"3671"=
+>model_confidence =E2=88=88 [0,1]</code>.</p></li>
+<li data-start=3D"3673" data-end=3D"3784" data-is-last-node=3D""><p data-st=
+art=3D"3675" data-end=3D"3784" data-is-last-node=3D""><strong data-start=3D=
+"3675" data-end=3D"3698">Visual consistency:</strong> Use the same numeric =
+precision across tiles; prefer 1dp for percentages and averages.</p></li>
+</ul>
+<pre><br></pre>
+<h3 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-Notes">Notes</h3>
+<pre><br></pre>
+<ul>
+<li><p>All metrics are sourced from the <strong>published mart</strong> <s>=
+<code>uk_pub_expmnt_verint_callsummary_is.mart_ai_call_summary</code>.</s><=
+/p></li>
+<li><p>Each field aggregates over the selected dashboard date range.</p></l=
+i>
+<li><p>Risk, sentiment, and compliance thresholds should remain configurabl=
+e in the BI layer, allowing business teams to tune alert levels without sch=
+ema changes.</p></li>
+<li><p>The KPI tile view (<code>v_dash_kpi_tiles</code>) should return one =
+row per refresh, ensuring fast rendering in Tableau.</p></li>
+</ul>
+<h2 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-5.BIviewforTablea=
+u(overthemart)[WIP]">5. BI view for Tableau (over the mart) [WIP]</h2>
+<p>Create a thin view <code>uk_pub_expmnt_verint_callsummary_is.v_churn_das=
+h</code> that:</p>
+<ul>
+<li><p>Casts types safely, derives KPIs, and exposes standardised dimension=
+s.</p></li>
+<li><p>Keeps one row per call/interaction (Tableau extracts friendly).</p><=
+/li>
+</ul>
+<p><em>INSERT SQL HERE</em></p>
+<h2 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-6.Performance,sec=
+urity,governance[WIP]">6. Performance, security, governance [WIP]</h2>
+<h2 id=3D"ChurnInsights=E2=80=93FastFollowDashboard(Spec)-7.Buildchecklist[=
+WIP]">7. Build checklist [WIP]</h2>
+<pre><br></pre>
+    </div>
+</body>
+</html>
+------=_Part_2599_53539453.1764586992901--

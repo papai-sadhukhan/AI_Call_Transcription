@@ -1,0 +1,1104 @@
+Date: Mon, 1 Dec 2025 11:04:02 +0000 (GMT)
+Message-ID: <150984826.2604.1764587042120@up-0004018.bskyb.com>
+Subject: Exported From Confluence
+MIME-Version: 1.0
+Content-Type: multipart/related; 
+	boundary="----=_Part_2603_1492989498.1764587042120"
+
+------=_Part_2603_1492989498.1764587042120
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+Content-Location: file:///C:/exported.html
+
+<html xmlns:o=3D'urn:schemas-microsoft-com:office:office'
+      xmlns:w=3D'urn:schemas-microsoft-com:office:word'
+      xmlns:v=3D'urn:schemas-microsoft-com:vml'
+      xmlns=3D'urn:w3-org-ns:HTML'>
+<head>
+    <meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8=
+">
+    <title>Gen AI Call Insights =E2=80=93 Semantic Layer LLD</title>
+    <!--[if gte mso 9]>
+    <xml>
+        <o:OfficeDocumentSettings>
+            <o:TargetScreenSize>1024x640</o:TargetScreenSize>
+            <o:PixelsPerInch>72</o:PixelsPerInch>
+            <o:AllowPNG/>
+        </o:OfficeDocumentSettings>
+        <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>90</w:Zoom>
+            <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+    </xml>
+    <![endif]-->
+    <style>
+                <!--
+        @page Section1 {
+            size: 8.5in 11.0in;
+            margin: 1.0in;
+            mso-header-margin: .5in;
+            mso-footer-margin: .5in;
+            mso-paper-source: 0;
+        }
+
+        table {
+            border: solid 1px;
+            border-collapse: collapse;
+        }
+
+        table td, table th {
+            border: solid 1px;
+            padding: 5px;
+        }
+
+        td {
+            page-break-inside: avoid;
+        }
+
+        tr {
+            page-break-after: avoid;
+        }
+
+        div.Section1 {
+            page: Section1;
+        }
+
+        /* Confluence print stylesheet. Common to all themes for print medi=
+a */
+/* Full of !important until we improve batching for print CSS */
+
+@media print {
+    #main {
+        padding-bottom: 1em !important; /* The default padding of 6em is to=
+o much for printouts */
+    }
+
+    body {
+        font-family: Arial, Helvetica, FreeSans, sans-serif;
+        font-size: 10pt;
+        line-height: 1.2;
+    }
+
+    body, #full-height-container, #main, #page, #content, .has-personal-sid=
+ebar #content {
+        background: #fff !important;
+        color: #000 !important;
+        border: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+    }
+
+    a, a:link, a:visited, a:focus, a:hover, a:active {
+        color: #000;
+    }
+
+    #content h1,
+    #content h2,
+    #content h3,
+    #content h4,
+    #content h5,
+    #content h6 {
+        font-family: Arial, Helvetica, FreeSans, sans-serif;
+        page-break-after: avoid;
+    }
+
+    pre {
+        font-family: Monaco, "Courier New", monospace;
+    }
+
+    #header,
+    .aui-header-inner,
+    #navigation,
+    #sidebar,
+    .sidebar,
+    #personal-info-sidebar,
+    .ia-fixed-sidebar,
+    .page-actions,
+    .navmenu,
+    .ajs-menu-bar,
+    .noprint,
+    .inline-control-link,
+    .inline-control-link a,
+    a.show-labels-editor,
+    .global-comment-actions,
+    .comment-actions,
+    .quick-comment-container,
+    #addcomment {
+        display: none !important;
+    }
+
+    /* CONF-28544 cannot print multiple pages in IE */
+    #splitter-content {
+        position: relative !important;
+    }
+
+    .comment .date::before {
+        content: none !important; /* remove middot for print view */
+    }
+
+    h1.pagetitle img {
+        height: auto;
+        width: auto;
+    }
+
+    .print-only {
+        display: block;
+    }
+
+    #footer {
+        position: relative !important; /* CONF-17506 Place the footer at en=
+d of the content */
+        margin: 0;
+        padding: 0;
+        background: none;
+        clear: both;
+    }
+
+    #poweredby {
+        border-top: none;
+        background: none;
+    }
+
+    #poweredby li.print-only {
+        display: list-item;
+        font-style: italic;
+    }
+
+    #poweredby li.noprint {
+        display: none;
+    }
+
+    /* no width controls in print */
+    .wiki-content .table-wrap,
+    .wiki-content p,
+    .panel .codeContent,
+    .panel .codeContent pre,
+    .image-wrap {
+        overflow: visible !important;
+    }
+
+    /* TODO - should this work? */
+    #children-section,
+    #comments-section .comment,
+    #comments-section .comment .comment-body,
+    #comments-section .comment .comment-content,
+    #comments-section .comment p {
+        page-break-inside: avoid;
+    }
+
+    #page-children a {
+        text-decoration: none;
+    }
+
+    /**
+     hide twixies
+
+     the specificity here is a hack because print styles
+     are getting loaded before the base styles. */
+    #comments-section.pageSection .section-header,
+    #comments-section.pageSection .section-title,
+    #children-section.pageSection .section-header,
+    #children-section.pageSection .section-title,
+    .children-show-hide {
+        padding-left: 0;
+        margin-left: 0;
+    }
+
+    .children-show-hide.icon {
+        display: none;
+    }
+
+    /* personal sidebar */
+    .has-personal-sidebar #content {
+        margin-right: 0px;
+    }
+
+    .has-personal-sidebar #content .pageSection {
+        margin-right: 0px;
+    }
+
+    .no-print, .no-print * {
+        display: none !important;
+    }
+}
+-->
+    </style>
+</head>
+<body>
+    <h1>Gen AI Call Insights =E2=80=93 Semantic Layer LLD</h1>
+    <div class=3D"Section1">
+        <p><strong><span style=3D"color: rgb(255,0,0);">THIS PAGE TO BE TRA=
+NSFORMED INTO THE LLD FOR THE SEMANTIC LAYER THAT POWERS DASHBOARDS AND SEL=
+F SERVICE</span></strong></p>
+<p><strong>Status: Draft for Technical Review</strong></p>
+<p>This page is an <strong>in-progress working draft</strong> of the update=
+d <em>Call Transcript Insights Dashboard Specification</em>.<br>
+ It reflects Carl=E2=80=99s initial interpretation of the current SQL pipel=
+ine and data-mart design following the recent code review.</p>
+<p>The content is <strong>not yet approved for development</strong>.<br>
+ It is now under review by:</p>
+<ul>
+<li><p><strong>Adam Regulinski</strong> =E2=80=93 Lead Data Engineer (BigQu=
+ery pipeline, lineage, and schema validation)</p></li>
+<li><p><strong>Manigandan&nbsp; Arumugam</strong>&nbsp;=E2=80=93 Lead Table=
+au Analyst (dashboard data model, KPIs, and visual design)</p></li>
+</ul>
+<p>Both reviewers will validate technical accuracy, update dataset referenc=
+es, and confirm Tableau field mappings before this specification is baselin=
+ed for development.</p>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-/*<![CDATA[*/div.rbtoc=
+1764587042055{padding:0px;}div.rbtoc1764587042055ul{margin-left:0px;}div.rb=
+toc1764587042055li{margin-left:0px;padding-left:0px;}/*]]>*/#GenAICallInsig=
+hts=E2=80=93SemanticLayerLLD-1.Purpose#GenAICallInsights"><style type=3D"te=
+xt/css">/*<![CDATA[*/
+div.rbtoc1764587042055 {padding: 0px;}
+div.rbtoc1764587042055 ul {margin-left: 0px;}
+div.rbtoc1764587042055 li {margin-left: 0px;padding-left: 0px;}
+
+/*]]>*/</style>
+<div class=3D"toc-macro rbtoc1764587042055">
+<ul class=3D"toc-indentation">
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-"></a></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-1.Purpose">1. Pu=
+rpose</a>
+<ul class=3D"toc-indentation">
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-Objective">Objec=
+tive</a></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-Context">Context=
+</a></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-AlignmentwithPro=
+grammeRequirements">Alignment with Programme Requirements</a></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-Outcome">Outcome=
+</a></li>
+</ul></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-2.DesignTeam&amp=
+;Deliverables">2. Design Team &amp; Deliverables</a>
+<ul class=3D"toc-indentation">
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-Team&amp;Deliver=
+ables">Team &amp; Deliverables</a></li>
+</ul></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-3.DataFlowOvervi=
+ew">3. Data Flow Overview</a></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-4.LLMPromptContr=
+act">4. LLM Prompt Contract</a></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-5.DestinationSch=
+ema">5. Destination Schema</a></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-6.DerivingRiskMe=
+trics">6. Deriving Risk Metrics</a></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-7.TableauDashboa=
+rdFeedandFilters">7. Tableau Dashboard Feed and Filters</a></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-8.PrivacyandGove=
+rnance">8. Privacy and Governance</a></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-9.KPITilesQuery"=
+>9. KPI Tiles Query</a>
+<ul class=3D"toc-indentation">
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-KPITilesOverview=
+">KPI Tiles Overview</a></li>
+</ul></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-10.TimelineandDe=
+liverables">10. Timeline and Deliverables</a></li>
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-11.TableInventor=
+y">11. Table Inventory</a>
+<ul class=3D"toc-indentation">
+<li><a href=3D"#GenAICallInsights=E2=80=93SemanticLayerLLD-Summary">Summary=
+</a></li>
+</ul></li>
+</ul>
+</div></h2>
+<p><br></p>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-1.Purpose">1. Purpose<=
+/h2>
+<h3 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-Objective">Objective</=
+h3>
+<p>Deliver semantic layer data sets that power Tableau dashboards containin=
+g AI generated data. Join output from the Gen AI Engineering Pipeline with =
+data from Pres and P1 (customer, subs, interactions, etc) into Tableau-frie=
+ndly tables for easy display and interactive filtering. Perform as much com=
+pute, calculation and aggregation as possible in overnight batch to make Ta=
+bleau easier to implement and as fast as possible at run time.</p>
+<p><br>
+ The semantic layer supports Sky=E2=80=99s three core use cases defined in =
+the Call Transcript Analysis programme:</p>
+<div class=3D"table-wrap">
+<table class=3D"wrapped confluenceTable">
+<thead>
+<tr>
+<th class=3D"confluenceTh">Use Case</th>
+<th class=3D"confluenceTh">Description</th>
+<th class=3D"confluenceTh">Primary KPI Focus</th>
+<th class=3D"confluenceTh">MVP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class=3D"confluenceTd"><strong>Churn Insights</strong></td>
+<td class=3D"confluenceTd">Identify drivers of customer churn, competitor m=
+entions, and dissatisfaction themes.</td>
+<td class=3D"confluenceTd">Churn risk score, sentiment trend, competitor fr=
+equency, repeat-call flag</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><strong>Billing Pain Points</strong></td>
+<td class=3D"confluenceTd">Detect billing-related frustration and vulnerabi=
+lity indicators (affordability, hardship).</td>
+<td class=3D"confluenceTd">Billing issues by product, escalation rate, comp=
+liance flag</td>
+<td class=3D"confluenceTd">N</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><strong>Agent Behaviour and Compliance</strong><=
+/td>
+<td class=3D"confluenceTd">Measure rapport, empathy, and compliance using t=
+he Six Business Behaviours framework.</td>
+<td class=3D"confluenceTd">Rapport score, empathy index, compliance events<=
+/td>
+<td class=3D"confluenceTd">N</td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-Context">Context</h3>
+<p>This Tableau proof-of-concept forms part of the Q4 2025 MVP for the Call=
+ Transcript Analysis programme.<br>
+ The underlying GCP pipeline ingests Verint transcripts, performs Presidio-=
+based redaction, applies Gemini Batch LLM summarisation, and publishes stru=
+ctured, non-PII insights into governed BigQuery marts for visualisation.<br=
+>
+ The Tableau layer represents the presentation component of this pipeline a=
+nd demonstrates how summarised transcript data can be operationalised for l=
+eadership decision-making.</p>
+<h3 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-AlignmentwithProgramme=
+Requirements">Alignment with Programme Requirements</h3>
+<p>The dashboard directly implements the <em>Dashboard Delivery</em> and <e=
+m>Enrichment and Data Marts</em> requirements from the Call Transcript Anal=
+ysis MVP:</p>
+<ul>
+<li><p><s><span style=3D"color: rgb(0,51,102);"><strong>Dashboard Delivery:=
+</strong></span></s></p>
+<ul>
+<li style=3D"color: rgb(0,51,102);"><p><s><span style=3D"color: rgb(0,51,10=
+2);">Three Tableau workbooks =E2=80=93 Churn Insights, Executive Summary, a=
+nd Agent Behaviour.</span></s></p></li>
+<li style=3D"color: rgb(0,51,102);"><p><s><span style=3D"color: rgb(0,51,10=
+2);">Visual components include KPI tiles, risk and sentiment trends, issue =
+breakdowns, and detailed call views.</span></s></p></li>
+<li style=3D"color: rgb(0,51,102);"><p><s><span style=3D"color: rgb(0,51,10=
+2);">Filters: Date, Call Type, Reason, Outcome, Tenure, VIP Status, Territo=
+ry, Loyalty Tier.</span></s></p></li>
+<li style=3D"color: rgb(0,51,102);"><p><s><span style=3D"color: rgb(0,51,10=
+2);">=E2=89=A4 5 s query latency for common filters; row-level security whe=
+re required.</span></s></p></li>
+</ul></li>
+<li><p><strong>Enrichment and Data Marts:</strong></p>
+<ul>
+<li><p>Marts<s> P1 and P2</s> join summarised call insights to interaction,=
+ subscription, and loyalty data.</p></li>
+<li><p>Include tenure, tier, geography, repeat-call, and movement indicator=
+s.</p></li>
+<li><p>Publish aggregated views supporting churn, <s>billing, and technical=
+-issue analysis.</s></p></li>
+</ul></li>
+<li><p><s><strong>Governance and Compliance:</strong></s></p>
+<ul>
+<li><p><s>PII removed before LLM processing (Presidio TF layer).</s></p></l=
+i>
+<li><p><s>Dataset metadata tagged with <code>data_owner</code>, <code>conta=
+ins_pii</code>, and <code>retention_days</code>.</s></p></li>
+<li><p><s>Retention policy =E2=80=93 90 days for TF data and 12 months for =
+published marts.</s></p></li>
+</ul></li>
+</ul>
+<h3 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-Outcome">Outcome</h3>
+<p>One or more datasets tables to power the first use cases</p>
+<ul>
+<li><p>Unified, auditable call-insight metrics across the three use cases.<=
+/p></li>
+<li><p><s>Rapid visibility of churn risk, billing pain points, and agent be=
+haviour.</s></p></li>
+<li><p>Scalable and extendable code and table(s).</p></li>
+</ul>
+<p><br></p>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-2.DesignTeam&amp;Deliv=
+erables">2. Design Team &amp; Deliverables</h2>
+<h3 style=3D"text-align: left;" id=3D"GenAICallInsights=E2=80=93SemanticLay=
+erLLD-Team&amp;Deliverables"><span>Team &amp; Deliverables</span></h3>
+<div class=3D"table-wrap">
+<table class=3D"wrapped confluenceTable">
+<thead>
+<tr>
+<td class=3D"confluenceTd"><p><span><span>Who</span></span></p></td>
+<td class=3D"confluenceTd"><p><span><span>Responsibility</span></span></p><=
+/td>
+<td class=3D"confluenceTd"><p><span><span>Deliverable &amp; ETA</span></spa=
+n></p></td>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class=3D"confluenceTd"><p><span>tbc</span></p></td>
+<td class=3D"confluenceTd"><p><span><span>tbc</span></span></p></td>
+<td class=3D"confluenceTd"><p><span><span>tbc</span></span></p></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><p><span>tbc</span></p></td>
+<td class=3D"confluenceTd"><p><span><span>tbc</span></span></p></td>
+<td class=3D"confluenceTd"><p><span><span>tbc</span></span></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-3.DataFlowOverview">3.=
+ Data Flow Overview</h2>
+<p>Gen AI Engineering Pipeline writes to&nbsp;</p>
+<p>Semantic Layer to select from TF/Pres and P1 core data sets, and write t=
+o P1/P0<br><em><a href=3D"https://wiki.at.sky/pages/viewpage.action?pageId=
+=3D1203746233#GenAICallInsights%E2%80%93PipelineLLD-5.DestinationSchema" re=
+l=3D"nofollow">TF/Pres table</a><br>
+ List the P1 tables here</em><br><em>List the output table(s) here</em></p>
+<p>Tableau to select from Sematic Layer</p>
+<p><br></p>
+<p><s><strong>Original flow (triage / deep LLM) replaced with governed batc=
+h pipeline.</strong></s></p>
+<p><s><strong>Current design</strong></s></p>
+<pre><s><code>Verint =E2=86=92 td_verint_transcription_raw
+=E2=86=92 td_ai_call_summary_input_ref (Gemini batch input)
+=E2=86=92 td_ai_call_summary_batch_output_raw (Gemini batch output)
+=E2=86=92 td_ai_call_summary_p1  =E2=86=92 ai_call_summary
+=E2=86=92 td_mart_ai_call_summary_p1  =E2=86=92 td_mart_ai_call_summary_p2
+=E2=86=92 mart_ai_call_summary =E2=86=92 Tableau
+</code></s></pre>
+<p><s><strong>Notes</strong></s></p>
+<ul>
+<li><p><s>Transcripts parsed from Verint JSON exports into</s><br><s><code>=
+uk_pre_expmnt_verint_calltranscript_is.td_verint_transcription_raw</code>.<=
+/s></p></li>
+<li><p><s>LLM payloads generated as JSON in GCS via</s><br><s><code>uk_pre_=
+expmnt_verint_calltranscript_is.td_ai_call_summary_input_ref</code>.</s></p=
+></li>
+<li><p><s>Gemini Batch writes results back to</s><br><s><code>uk_pre_expmnt=
+_verint_calltranscript_is.td_ai_call_summary_batch_output_raw</code>.</s></=
+p></li>
+<li><p><s>Parsed and typed outputs are persisted in</s><br><s><code>uk_pre_=
+expmnt_verint_calltranscript_is.td_ai_call_summary_p1</code> and</s><br><s>=
+<code>uk_pub_expmnt_verint_callsummary_is.ai_call_summary</code>.</s></p></=
+li>
+<li><p><s>Enrichment and analytics marts are built in two steps:</s><br><s>=
+<code>=E2=80=A6td_mart_ai_call_summary_p1</code> (interaction / loyalty joi=
+ns) and</s><br><s><code>=E2=80=A6td_mart_ai_call_summary_p2</code> (churn /=
+ product movement joins).</s></p></li>
+<li><p><s>Tableau connects to the published table</s><br><s><code>uk_pub_ex=
+pmnt_verint_callsummary_is.mart_ai_call_summary</code>.</s></p></li>
+<li><p><s>Join keys: <code>transaction_id</code> =E2=86=92 <code>interactio=
+n_id</code> / <code>party_id</code> (no direct customer_id joins).</s></p><=
+/li>
+</ul>
+<p><br></p>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-4.LLMPromptContract"><=
+s>4. LLM Prompt Contract</s></h2>
+<p><s><strong>Previous content (9-field schema) replaced with the implement=
+ed 20-field JSON structure.</strong></s></p>
+<p><s>The Gemini Batch prompt defines 20 fields including summary, reason, =
+competitor/product arrays, cancellation and technical flags with reasons, s=
+entiment score and summary, compliance and piracy flags, deferred-decision =
+reasons, customer-context insights, churn-risk score, rapport score, and mo=
+del confidence score.</s></p>
+<p><s>Validation path:</s></p>
+<ol>
+<li><p><s>Results land in external JSONL table</s><br><s><code>td_ai_call_s=
+ummary_batch_output_raw</code>.</s></p></li>
+<li><p><s>Parsed into <code>td_ai_call_summary_p1</code>.</s></p></li>
+<li><p><s>Typed / cleaned into <code>ai_call_summary</code>.</s></p></li>
+</ol>
+<p><s>No standalone Pydantic quarantine table is used.</s><br><s>Raw vs val=
+idated separation is maintained through</s><br><s><code>uk_tmp_raw_llm_resp=
+onse_ic</code> and <code>uk_pre_validated_llm_response_ic</code>.</s></p>
+<p><br></p>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-5.DestinationSchema">5=
+. Destination Schema</h2>
+<p><strong>Replace <code>bq_ai.ai_call_insights_v0</code> with the producti=
+on tables.</strong></p>
+<p><s><strong>Primary table</strong></s><br><s><code>uk_pub_expmnt_verint_c=
+allsummary_is.ai_call_summary</code></s></p>
+<p><s>Key columns:</s></p>
+<pre><s><code>ai_generated_call_summary
+ai_primary_call_reason
+ai_competitor_flag<br>ai_competitors
+ai_product_flag<br>ai_products
+ai_cancel_attempt_flag<br>ai_cancel_attempt_reasons
+ai_technical_issue_flag<br>ai_technical_issue_reasons
+ai_customer_sentiment_score
+ai_compliance_flag<br>ai_piracy_flag
+ai_deferred_decision_flag<br>ai_deferred_decision_reasons
+ai_customer_context_insights
+ai_churn_risk_score
+ai_rapport_score
+ai_model_score
+</code></s></pre>
+<p><s><strong>Marts</strong></s></p>
+<ul>
+<li><p><s><code>td_mart_ai_call_summary_p1</code> =E2=80=93 adds interactio=
+n / loyalty / tenure fields.</s></p></li>
+<li><p><s><code>td_mart_ai_call_summary_p2</code> =E2=80=93 adds churn-pipe=
+line and product-movement indicators.</s></p></li>
+<li><p><s><code>mart_ai_call_summary</code> =E2=80=93 published, Tableau-re=
+ady dataset</s>.</p></li>
+</ul>
+<p><br></p>
+<div class=3D"table-wrap">
+<table class=3D"wrapped confluenceTable">
+<colgroup>
+<col>
+<col>
+<col>
+<col>
+<col>
+</colgroup>
+<thead>
+<tr>
+<th class=3D"confluenceTh"><strong>Column Name</strong></th>
+<th class=3D"confluenceTh"><strong>Description / Business Meaning</strong><=
+/th>
+<th class=3D"confluenceTh"><strong>Source / Derived From</strong></th>
+<th class=3D"confluenceTh"><strong>Sourced From</strong></th>
+<th class=3D"confluenceTh"><p><strong>Req'd for&nbsp;</strong></p><p><stron=
+g>Churn Insight </strong></p><p><strong>Dashboard</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class=3D"confluenceTd"><code>transaction_id</code></td>
+<td class=3D"confluenceTd">Unique identifier for each Verint call transcrip=
+t.</td>
+<td class=3D"confluenceTd">Verint metadata (<code>td_verint_transcription_r=
+aw</code>)</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>interaction_id</code></td>
+<td class=3D"confluenceTd">Mapped interaction record from customer interact=
+ion mart.</td>
+<td class=3D"confluenceTd"><code>dim_infomart_interaction_search</code></td=
+>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>account_number</code></td>
+<td class=3D"confluenceTd"><br></td>
+<td class=3D"confluenceTd"><br></td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_generated_call_summary</code></td>
+<td class=3D"confluenceTd">Short natural-language summary of the call.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_primary_call_reason</code></td>
+<td class=3D"confluenceTd">One-word label for the main reason for the call.=
+</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_competitor_flag</code></td>
+<td class=3D"confluenceTd">Indicates if competitors were mentioned.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_competitors</code></td>
+<td class=3D"confluenceTd">List of competitor brands mentioned.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_product_flag</code></td>
+<td class=3D"confluenceTd">Indicates if Sky products were discussed.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_products</code></td>
+<td class=3D"confluenceTd">List of products or services mentioned.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_cancel_attempt_flag</code></td>
+<td class=3D"confluenceTd">Indicates if the customer attempted to cancel a =
+product.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_cancel_attempt_reasons</code></td>
+<td class=3D"confluenceTd">Reasons provided for wanting to cancel.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_technical_issue_flag</code></td>
+<td class=3D"confluenceTd">Indicates if technical issues were raised.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_technical_issue_reasons</code></td>
+<td class=3D"confluenceTd">Details or descriptions of the technical issues.=
+</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_customer_sentiment_score</code></td>
+<td class=3D"confluenceTd">Sentiment score (1=E2=80=935) derived from custo=
+mer tone.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_compliance_flag</code></td>
+<td class=3D"confluenceTd">TRUE if the call contained compliance or vulnera=
+bility language.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_piracy_flag</code></td>
+<td class=3D"confluenceTd">TRUE if the call referenced piracy or illegal st=
+reaming.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_deferred_decision_flag</code></td>
+<td class=3D"confluenceTd">TRUE if the customer deferred a decision during =
+the call.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_deferred_decision_reasons</code></td>
+<td class=3D"confluenceTd">Reasons for deferring a decision.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_customer_context_insights</code></td>
+<td class=3D"confluenceTd">Contextual or lifestyle insights mentioned by th=
+e customer.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_rapport_score</code></td>
+<td class=3D"confluenceTd">Rating (1=E2=80=935) of agent rapport or empathy=
+.</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_churn_risk_score</code></td>
+<td class=3D"confluenceTd">Rating (1=E2=80=935) of risk of churn</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>ai_model_score</code></td>
+<td class=3D"confluenceTd">Model confidence score (1=E2=80=9310).</td>
+<td class=3D"confluenceTd">Gemini LLM output</td>
+<td class=3D"confluenceTd">TF Pipeline Output</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>agent_id</code></td>
+<td class=3D"confluenceTd"><br></td>
+<td class=3D"confluenceTd"><br></td>
+<td class=3D"confluenceTd">P1 Interactions</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>interaction_start_date</code></td>
+<td class=3D"confluenceTd">Start timestamp of the call interaction.</td>
+<td class=3D"confluenceTd">Customer Interaction mart</td>
+<td class=3D"confluenceTd">P1 Interactions</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>interaction_end_date</code></td>
+<td class=3D"confluenceTd">End timestamp of the call interaction.</td>
+<td class=3D"confluenceTd">Customer Interaction mart</td>
+<td class=3D"confluenceTd">P1 Interactions</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>interaction_order</code></td>
+<td class=3D"confluenceTd">Sequence number of the interaction in the custom=
+er journey.</td>
+<td class=3D"confluenceTd">Customer Interaction mart</td>
+<td class=3D"confluenceTd">P1 Interactions</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>interaction_direction</code></td>
+<td class=3D"confluenceTd">Indicates whether the call was inbound or outbou=
+nd.</td>
+<td class=3D"confluenceTd"><code>mart_vis_interactions_calls</code></td>
+<td class=3D"confluenceTd">P1 Interactions</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>interaction_resource_name</code></td>
+<td class=3D"confluenceTd">Name of the agent or resource that handled the c=
+all.</td>
+<td class=3D"confluenceTd">Interaction activity (<code>resource_event_activ=
+ity</code>)</td>
+<td class=3D"confluenceTd">P1 Interactions</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>one_day_repeat_flag</code></td>
+<td class=3D"confluenceTd">Flag for repeated customer contact within 24 hou=
+rs.</td>
+<td class=3D"confluenceTd"><code>mart_interaction_customer_holding_intraday=
+</code></td>
+<td class=3D"confluenceTd">?</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>seven_day_repeat_flag</code></td>
+<td class=3D"confluenceTd">Flag for repeated contact within seven days.</td=
+>
+<td class=3D"confluenceTd"><code>mart_interaction_customer_holding_intraday=
+</code></td>
+<td class=3D"confluenceTd">?</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>portfolio_id</code></td>
+<td class=3D"confluenceTd">Customer portfolio identifier.</td>
+<td class=3D"confluenceTd"><code>mart_vis_customer</code></td>
+<td class=3D"confluenceTd">P1 Interactions</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>tenure_yrs</code></td>
+<td class=3D"confluenceTd">Customer tenure in years.</td>
+<td class=3D"confluenceTd"><code>mart_vis_customer</code></td>
+<td class=3D"confluenceTd">P1 Customer</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>loyalty_tier</code></td>
+<td class=3D"confluenceTd">Customer loyalty programme tier.</td>
+<td class=3D"confluenceTd"><code>fact_loyalty</code></td>
+<td class=3D"confluenceTd">P1 Customer</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>out_postcode</code></td>
+<td class=3D"confluenceTd">First three characters of the customer=E2=80=99s=
+ postcode.</td>
+<td class=3D"confluenceTd"><code>mart_vis_customer</code></td>
+<td class=3D"confluenceTd">P1 Customer</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>call_tv_movements</code></td>
+<td class=3D"confluenceTd">Movements or changes in TV product orders.</td>
+<td class=3D"confluenceTd">Customer holding dataset</td>
+<td class=3D"confluenceTd">P1 Interactions ?</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>call_tv_status_movements</code></td>
+<td class=3D"confluenceTd">Status changes for TV subscriptions.</td>
+<td class=3D"confluenceTd">Customer holding dataset</td>
+<td class=3D"confluenceTd">P1 Interactions ?</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>call_glass_movements</code></td>
+<td class=3D"confluenceTd">Movements for Sky Glass products.</td>
+<td class=3D"confluenceTd">Customer holding dataset</td>
+<td class=3D"confluenceTd">P1 Interactions ?</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>call_glass_status_movements</code></td>
+<td class=3D"confluenceTd">Status changes for Sky Glass.</td>
+<td class=3D"confluenceTd">Customer holding dataset</td>
+<td class=3D"confluenceTd">P1 Interactions ?</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>call_broadband_movements</code></td>
+<td class=3D"confluenceTd">Movements in broadband products.</td>
+<td class=3D"confluenceTd">Customer holding dataset</td>
+<td class=3D"confluenceTd">P1 Interactions ?</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>call_broadband_status_movements</code></td=
+>
+<td class=3D"confluenceTd">Status changes for broadband.</td>
+<td class=3D"confluenceTd">Customer holding dataset</td>
+<td class=3D"confluenceTd">P1 Interactions ?</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>call_talk_movements</code></td>
+<td class=3D"confluenceTd">Movements in talk or voice services.</td>
+<td class=3D"confluenceTd">Customer holding dataset</td>
+<td class=3D"confluenceTd">P1 Interactions ?</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>call_talk_status_movements</code></td>
+<td class=3D"confluenceTd">Status changes for talk or voice services.</td>
+<td class=3D"confluenceTd">Customer holding dataset</td>
+<td class=3D"confluenceTd">P1 Interactions ?</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>post_call_churn_pipeline_flag</code></td>
+<td class=3D"confluenceTd">TRUE if the call links to a churn-pipeline recor=
+d after the event.</td>
+<td class=3D"confluenceTd"><code>churn_pipeline</code> dataset</td>
+<td class=3D"confluenceTd">?</td>
+<td class=3D"confluenceTd">Y</td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>post_call_churn_pipeline_status</code></td=
+>
+<td class=3D"confluenceTd">Latest churn-pipeline status for this interactio=
+n.</td>
+<td class=3D"confluenceTd"><code>churn_pipeline</code> dataset</td>
+<td class=3D"confluenceTd">?</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><code>post_call_churn_pipeline_cancellation_type=
+</code></td>
+<td class=3D"confluenceTd">Cancellation type recorded in churn pipeline.</t=
+d>
+<td class=3D"confluenceTd"><code>churn_pipeline</code> dataset</td>
+<td class=3D"confluenceTd">?</td>
+<td class=3D"confluenceTd"><br></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-6.DerivingRiskMetrics"=
+>6.<s> Deriving Risk Metrics</s></h2>
+<p><s>The demo=E2=80=99s 0=E2=80=931 <code>risk_score</code> heuristic is d=
+eprecated.</s></p>
+<p><s>Use the LLM-generated <code>ai_churn_risk_score</code> (range 1=E2=80=
+=935).</s><br><s>If a probability is required for dashboards:</s></p>
+<pre><s><code>risk_score_prob =3D (ai_churn_risk_score - 1) / 4
+risk_flag =3D risk_score_prob &gt; 0.65
+</code></s></pre>
+<p><s>Compute these in a BI view layered over the mart rather than storing =
+them in the table</s>.</p>
+<p><br></p>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-7.TableauDashboardFeed=
+andFilters">7. <s>Tableau Dashboard Feed and Filters</s></h2>
+<p><s>Tableau now reads from:</s></p>
+<pre><s><code>uk_pub_expmnt_verint_callsummary_is.mart_ai_call_summary
+</code></s></pre>
+<p><s>Typical filters:</s></p>
+<ul>
+<li><p><s>Date, Call Type, Reason, Outcome</s></p></li>
+<li><p><s>Tenure, VIP Status, Territory, Loyalty Tier</s></p></li>
+</ul>
+<p><s>The dataset supports three workbooks:</s></p>
+<ol>
+<li><p><s><strong>Churn Insights</strong> =E2=80=93 sentiment, competitor m=
+entions, churn triggers.</s></p></li>
+<li><p><s><strong>Executive Summary</strong> =E2=80=93 macro KPIs and trend=
+ tiles.</s></p></li>
+<li><p><s><strong>Agent Behaviour</strong> =E2=80=93 rapport, compliance, e=
+mpathy metrics.</s></p></li>
+</ol>
+<p><s>Row-level security and partition clustering ensure query latency unde=
+r 5 s.</s></p>
+<p><br></p>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-8.PrivacyandGovernance=
+">8. Privacy and Governance</h2>
+<ul>
+<li><p><strong>Redaction:</strong> handled by Presidio<br>
+ (<code>uk_stg_redacted_transcripts_ic</code>).</p></li>
+<li><p><strong>Retention:</strong> drop and re-load from source tables</p><=
+/li>
+<li><p><strong>PII boundary:</strong> no PII enters LLM or downstream layer=
+s.</p></li>
+<li><p><s><strong>Prompt versioning:</strong> prompts and guardrail policie=
+s stored and versioned in GCS</s><br><s>(<code>skyuk-uk-utl-prompts-rules-&=
+lt;env&gt;</code>).</s></p></li>
+<li><p><s><strong>Lineage:</strong> model name, prompt ID, and parameter se=
+t captured in</s><br><s><code>uk_tmp_raw_llm_response_ic</code> / <code>uk_=
+pre_validated_llm_response_ic</code>.</s></p></li>
+<li><p><strong>Audit:</strong> every pipeline stage logged through Cloud Lo=
+gging and traceable via job ID.</p></li>
+</ul>
+<p><br></p>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-9.KPITilesQuery">9. <s=
+>KPI Tiles Query</s></h2>
+<h3 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-KPITilesOverview"><s>K=
+PI Tiles Overview</s></h3>
+<p><s>The KPI tiles provide a unified summary of key performance indicators=
+ across all three Call Transcript Analysis use cases =E2=80=94 <strong>Chur=
+n Insights</strong>, <strong>Billing Pain Points</strong>, and <strong>Agen=
+t Behaviour &amp; Compliance</strong>.</s><br><s>Each tile presents a real-=
+time snapshot of customer sentiment, churn risk, and compliance signals der=
+ived from LLM-generated transcript insights joined to subscription and loya=
+lty data.</s></p>
+<p><s>These metrics are calculated in BigQuery from the published dataset</=
+s><br><s><code>uk_pub_expmnt_verint_callsummary_is.mart_ai_call_summary</co=
+de></s><br><s>and are refreshed daily as part of the scheduled batch proces=
+s.</s><br><s>They allow leadership to assess overall call volume, financial=
+ exposure (MRR at risk), and service quality at a glance, while still enabl=
+ing analysts to drill down into specific call types, products, or risk segm=
+ents within Tableau.</s></p>
+<p><br></p>
+<p><s>Example view-level SQL for Tableau:</s></p>
+<pre><s><code class=3D"language-sql">SELECT
+  DATE(interaction_start_date) AS call_date,
+  COUNT(*) AS total_calls,
+  SUM(CAST(ai_cancel_attempt_flag AS INT64)) AS cancel_attempts,
+  AVG(SAFE_CAST(ai_customer_sentiment_score AS FLOAT64)) AS avg_sentiment,
+  AVG((ai_churn_risk_score - 1) / 4) AS avg_risk_prob,
+  SUM(CASE WHEN (ai_churn_risk_score - 1)/4 &gt; 0.65 THEN 1 ELSE 0 END) AS=
+ high_risk_calls,
+  COUNTIF(ai_piracy_flag) AS piracy_mentions,
+  COUNTIF(ai_compliance_flag) AS compliance_flags
+FROM `uk_pub_expmnt_verint_callsummary_is.mart_ai_call_summary`
+GROUP BY call_date
+ORDER BY call_date DESC;</code></s></pre>
+<pre><br></pre>
+<pre><br></pre>
+<pre><br></pre>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-10.TimelineandDelivera=
+bles">10. Timeline and Deliverables</h2>
+<p><s>The =E2=80=9Cv_dash_call_subs=E2=80=9D deliverable is replaced by</s>=
+<br><s>publication of <code>mart_ai_call_summary</code> as the BI contract.=
+</s><br><s>Optional BI views (for example <code>v_dash_kpi_tiles</code>) ma=
+y be created on top of this table for derived KPIs or regional filtering</s=
+>.</p>
+<p><br></p>
+<h2 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-11.TableInventory">11.=
+ Table Inventory</h2>
+<p><span style=3D"color: rgb(255,0,0);">move this section to parent design =
+page?</span></p>
+<div class=3D"table-wrap">
+<table class=3D"wrapped confluenceTable">
+<thead>
+<tr>
+<th class=3D"confluenceTh">Layer</th>
+<th class=3D"confluenceTh">Purpose</th>
+<th class=3D"confluenceTh">Table name</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class=3D"confluenceTd"><strong>Source / Raw</strong></td>
+<td class=3D"confluenceTd">Parsed Verint transcripts</td>
+<td class=3D"confluenceTd"><code>uk_pre_expmnt_verint_calltranscript_is.td_=
+verint_transcription_raw</code></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><strong>External Input</strong></td>
+<td class=3D"confluenceTd">Gemini Batch input (JSON)</td>
+<td class=3D"confluenceTd"><code>uk_pre_expmnt_verint_calltranscript_is.td_=
+ai_call_summary_input_ref</code></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><strong>External Output</strong></td>
+<td class=3D"confluenceTd">Gemini Batch output (JSONL)</td>
+<td class=3D"confluenceTd"><code>uk_pre_expmnt_verint_calltranscript_is.td_=
+ai_call_summary_batch_output_raw</code></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><strong>Parsed Output P1</strong></td>
+<td class=3D"confluenceTd">Extract JSON fields from output</td>
+<td class=3D"confluenceTd"><code>uk_pre_expmnt_verint_calltranscript_is.td_=
+ai_call_summary_p1</code></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><strong>Typed Output</strong></td>
+<td class=3D"confluenceTd">Cleaned / normalised LLM fields</td>
+<td class=3D"confluenceTd"><code>uk_pub_expmnt_verint_callsummary_is.ai_cal=
+l_summary</code></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><strong>Mart P1</strong></td>
+<td class=3D"confluenceTd">Interaction + loyalty enrichment</td>
+<td class=3D"confluenceTd"><code>uk_pre_expmnt_verint_calltranscript_is.td_=
+mart_ai_call_summary_p1</code></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><strong>Mart P2</strong></td>
+<td class=3D"confluenceTd">Churn pipeline + movement enrichment</td>
+<td class=3D"confluenceTd"><code>uk_pre_expmnt_verint_calltranscript_is.td_=
+mart_ai_call_summary_p2</code></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><strong>Published Mart</strong></td>
+<td class=3D"confluenceTd">Tableau feed / governed BI layer</td>
+<td class=3D"confluenceTd"><code>uk_pub_expmnt_verint_callsummary_is.mart_a=
+i_call_summary</code></td>
+</tr>
+<tr>
+<td class=3D"confluenceTd"><strong>QA &amp; Lineage</strong></td>
+<td class=3D"confluenceTd">Raw vs validated outputs / drift metrics</td>
+<td class=3D"confluenceTd"><code>uk_tmp_raw_llm_response_ic</code>, <code>u=
+k_pre_validated_llm_response_ic</code>, <code>uk_pre_qa_metrics_ic</code></=
+td>
+</tr>
+</tbody>
+</table>
+</div>
+<h3 id=3D"GenAICallInsights=E2=80=93SemanticLayerLLD-Summary">Summary</h3>
+<ul>
+<li><p>The former =E2=80=9Ctriage =E2=86=92 deep LLM =E2=86=92 v_dash_call_=
+subs=E2=80=9D path is replaced by a governed multi-table pipeline.</p></li>
+<li><p>All datasets now exist in BigQuery with defined retention, schema, a=
+nd lineage.</p></li>
+<li><p>Tableau consumes <code>mart_ai_call_summary</code>; risk and sentime=
+nt are derived in BI views, not stored in base tables.</p></li>
+<li><p>Compliance, QA, and FinOps metrics are embedded within the same arch=
+itecture.</p></li>
+</ul>
+<p><br></p>
+    </div>
+</body>
+</html>
+------=_Part_2603_1492989498.1764587042120--
