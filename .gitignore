@@ -22,3 +22,6 @@ test_*.py
 debug_*.py
 test/input.txt
 test/output.txt
+
+# Reference documentation
+ref_doc/
